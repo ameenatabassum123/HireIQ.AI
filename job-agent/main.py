@@ -94,10 +94,17 @@ def _resolve_profile_slug(
 def _web_settings(
     config: dict[str, Any], args: argparse.Namespace
 ) -> tuple[str, int]:
-    """Resolve bind host/port: CLI --port > config web.* > defaults."""
+    """Resolve bind host/port: CLI --port > PORT env var > config web.* > defaults."""
+    import os
     web_cfg = config.get("web") or {}
-    host = str(web_cfg.get("host") or DEFAULT_WEB_HOST)
-    port = getattr(args, "port", None) or web_cfg.get("port") or DEFAULT_WEB_PORT
+    host = os.environ.get("HOST") or str(web_cfg.get("host") or DEFAULT_WEB_HOST)
+    
+    port_env = os.environ.get("PORT")
+    if port_env:
+        port = int(port_env)
+    else:
+        port = getattr(args, "port", None) or web_cfg.get("port") or DEFAULT_WEB_PORT
+        
     return host, int(port)
 
 
