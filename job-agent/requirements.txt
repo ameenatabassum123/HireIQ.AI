@@ -15,8 +15,8 @@ pyyaml>=6.0,<7.0
 # Apify job scraping
 apify-client>=3.0.2,<4.0
 
-# Browser automation (pin to a Chromium-compatible major)
-playwright>=1.45,<2.0
+# Browser automation (pin to match the Docker base image)
+playwright==1.47.0
 
 # HTTP + HTML scraping
 requests>=2.31,<3.0
