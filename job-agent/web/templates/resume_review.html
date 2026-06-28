@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Tailor - HireIQ.AI</title>
+  <!-- Load React 18 & ReactDOM -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Load Babel Standalone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #EEF0F8;
+      overflow: hidden;
+      height: 100vh;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .animate-blink { animation: blink 1s step-end infinite; }
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    select:focus, textarea:focus {
+      outline: none;
+      border-color: #6366F1 !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <form id="hidden-accept-form" method="post" action="/resume-review/accept" style="display:none">
+    <input type="hidden" name="job_id" id="hidden-job-id" />
+    <input type="hidden" name="profile_slug" id="hidden-profile-slug" />
+  </form>
+
+  <script>
+    window.CURRENT_USER_NAME = "{{ current_user.name or current_user.email }}";
+    window.JOBS = {{ (jobs or []) | tojson }};
+    window.PROFILES = {{ (profiles or []) | tojson }};
+    window.SELECTED_JOB_ID = "{{ selected_job_id or '' }}";
+    window.ACTIVE_SLUG = "{{ active_slug or '' }}";
+    window.INITIAL_DIFFS = {{ (diffs or []) | tojson }};
+    window.MESSAGE = "{{ message or '' }}";
+    window.ERROR = "{{ error or '' }}";
+    window.HAS_PARSED_PROFILE = {{ 'true' if has_parsed_profile else 'false' }};
+  </script>
+
+  <script type="text/plain" id="react-code">
+    {% raw %}
+    const { useState, useEffect } = React;
+
+    const T = {
+      sidebar: "#0A0F1E", sidebarText: "rgba(255,255,255,0.5)", sidebarBorder: "rgba(255,255,255,0.07)",
+      bg: "#EEF0F8", ink: "#0F172A", muted: "#64748B", faint: "#94A3B8", white: "#fff",
+      indigo: "#6366F1", indigoL: "#EEF2FF", violet: "#8B5CF6",
+      cyan: "#06B6D4", emerald: "#10B981", amber: "#F59E0B", rose: "#F43F5E",
+      g1: "linear-gradient(135deg,#6366F1,#8B5CF6)",
+      g2: "linear-gradient(135deg,#06B6D4,#6366F1)",
+      g3: "linear-gradient(135deg,#10B981,#06B6D4)",
+      g4: "linear-gradient(135deg,#F43F5E,#F59E0B)",
+      g5: "linear-gradient(135deg,#8B5CF6,#F43F5E)",
+    };
+
+    const glass = (ex={}) => ({ background:"rgba(255,255,255,0.75)", border:"1px solid rgba(255,255,255,0.6)", backdropFilter:"blur(18px)", WebkitBackdropFilter:"blur(18px)", borderRadius:18, ...ex });
+
+    // ── NAV ITEMS
+    const NAV = [
+      {id:"home", label:"Home", icon:"⚡", href:"/home"},
+      {id:"dashboard", label:"Dashboard", icon:"▦", href:"/dashboard"},
+      {id:"jobs", label:"Jobs", icon:"◎", href:"/jobs"},
+      {id:"resume", label:"Resume Tailor", icon:"◷", href:"/resume-review"},
+      {id:"ats", label:"ATS Score", icon:"◉", href:"/ats"},
+      {id:"cover", label:"Cover Letter", icon:"✦", href:"/cover-letter"},
+      {id:"about", label:"About", icon:"ℹ", href:"/about"},
+    ];
+
+    // ── SIDEBAR
+    function Sidebar({ activeId }) {
+      return <div style={{width:228,flexShrink:0,background:"linear-gradient(180deg,#0A0F1E,#0C1226)",borderRight:`1px solid ${T.sidebarBorder}`,display:"flex",flexDirection:"column",padding:"24px 14px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:T.indigo,opacity:.07,filter:"blur(50px)",bottom:-30,left:-30,pointerEvents:"none"}}/>
+        {/* Logo */}
+        <div style={{padding:"2px 10px 24px",borderBottom:`1px solid ${T.sidebarBorder}`,marginBottom:18}}>
+          <div style={{fontFamily:"'Segoe UI',sans-serif",fontSize:19,fontWeight:800,color:T.white,letterSpacing:"-0.5px"}}>
+            HireIQ<span style={{background:T.g1,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>.AI</span>
+          </div>
+          <div style={{fontSize:8,color:T.sidebarText,marginTop:4,letterSpacing:"0.2px",lineHeight:1.3}}>From Resume to Offer ---- Your Personal AI Carrer Copilot</div>
+        </div>
+        {/* Nav */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
+          {NAV.map(n=>{
+            const a=activeId===n.id;
+            return <div key={n.id} onClick={()=>window.location.href=n.href} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:11,background:a?"rgba(99,102,241,0.18)":"transparent",border:a?"1px solid rgba(99,102,241,0.28)":"1px solid transparent",cursor:"pointer",position:"relative",transition:"all 0.18s"}}>
+              {a&&<div style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",width:3,height:18,background:T.g1,borderRadius:"0 3px 3px 0"}}/>}
+              <span style={{fontSize:15,opacity:a?1:.45}}>{n.icon}</span>
+              <span style={{fontSize:13,fontWeight:a?700:400,color:a?T.white:T.sidebarText}}>{n.label}</span>
+            </div>;
+          })}
+        </div>
+        {/* User */}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px",borderRadius:12,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:T.g1,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,color:T.white,flexShrink:0}}>
+            {(window.CURRENT_USER_NAME || "U")[0].toUpperCase()}
+          </div>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:T.white,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{window.CURRENT_USER_NAME || "User"}</div>
+            <div style={{fontSize:10,color:T.sidebarText}}>Pro Plan</div>
+          </div>
+          <form method="post" action="/logout" style={{margin:0,padding:0,display:"flex",alignItems:"center"}}>
+            <button type="submit" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:T.sidebarText,padding:"2px"}} title="Logout">
+              🚪
+            </button>
+          </form>
+        </div>
+      </div>;
+    }
+
+    // ── MAIN APP
+    function App() {
+      const [selectedJobId, setSelectedJobId] = useState(window.SELECTED_JOB_ID);
+      const [selectedProfileSlug, setSelectedProfileSlug] = useState(window.ACTIVE_SLUG);
+      const [loading, setLoading] = useState(false);
+      const [diffs, setDiffs] = useState(window.INITIAL_DIFFS || []);
+      const [checkedIndices, setCheckedIndices] = useState([]);
+      const [msg, setMsg] = useState(window.MESSAGE);
+      const [err, setErr] = useState(window.ERROR);
+
+      useEffect(() => {
+        if (window.INITIAL_DIFFS && window.INITIAL_DIFFS.length > 0) {
+          setCheckedIndices(window.INITIAL_DIFFS.map((_, idx) => idx));
+        }
+      }, []);
+
+      const runTailoring = () => {
+        if (!selectedJobId) {
+          alert("Please select a job first.");
+          return;
+        }
+        setLoading(true);
+        setDiffs([]);
+        setCheckedIndices([]);
+        setMsg("");
+        setErr("");
+
+        const body = new FormData();
+        if (selectedProfileSlug) body.append("profile_slug", selectedProfileSlug);
+
+        fetch(`/api/resume-review/${selectedJobId}/propose`, { method: "POST", body })
+          .then(r => r.json().then(data => ({ ok: r.ok, data })))
+          .then(res => {
+            setLoading(false);
+            if (!res.ok) {
+              setErr(res.data.error || res.data.detail || "Suggestions request failed.");
+              return;
+            }
+            if (res.data.error) {
+              setErr(res.data.error);
+              return;
+            }
+            if (!res.data.diffs || res.data.diffs.length === 0) {
+              setMsg("No edits suggested — your resume already matches this job description perfectly!");
+              return;
+            }
+            setDiffs(res.data.diffs);
+            setCheckedIndices(res.data.diffs.map((_, idx) => idx));
+            if (res.data.warning) {
+              setMsg(res.data.warning);
+            }
+          })
+          .catch(() => {
+            setLoading(false);
+            setErr("Request failed. Please try again.");
+          });
+      };
+
+      const handleCheckboxChange = (idx) => {
+        if (checkedIndices.includes(idx)) {
+          setCheckedIndices(checkedIndices.filter(i => i !== idx));
+        } else {
+          setCheckedIndices([...checkedIndices, idx]);
+        }
+      };
+
+      const handleAccept = () => {
+        const form = document.getElementById("hidden-accept-form");
+        document.getElementById("hidden-job-id").value = selectedJobId;
+        document.getElementById("hidden-profile-slug").value = selectedProfileSlug;
+
+        form.querySelectorAll('input[name="accepted"]').forEach(el => el.remove());
+
+        checkedIndices.forEach(idx => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "accepted";
+          input.value = idx;
+          form.appendChild(input);
+        });
+
+        form.submit();
+      };
+
+      // Helper to generate download links for tailored resumes from output paths
+      const getDownloadLink = (messageText) => {
+        if (!messageText) return null;
+        // Check if message mentions output save path
+        const match = messageText.match(/saved to\s+(output[\\\/].+\.pdf)/i);
+        if (match) {
+          const path = match[1].replace(/\\/g, "/");
+          return `/${path}`;
+        }
+        return null;
+      };
+
+      const downloadLink = getDownloadLink(msg);
+
+      return (
+        <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
+          <Sidebar activeId="resume" />
+          <div style={{ flex: 1, overflowY: "auto", background: T.bg, position: "relative" }}>
+            <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
+              <div style={{ position: "absolute", width: 340, height: 340, borderRadius: "50%", background: T.cyan, opacity: .07, filter: "blur(55px)", top: "15%", left: "15%" }} />
+              <div style={{ position: "absolute", width: 340, height: 340, borderRadius: "50%", background: T.indigo, opacity: .07, filter: "blur(55px)", top: "55%", left: "60%" }} />
+              <div style={{ position: "absolute", width: 340, height: 340, borderRadius: "50%", background: T.violet, opacity: .07, filter: "blur(55px)", top: "35%", left: "45%" }} />
+            </div>
+            <div style={{ position: "relative", zIndex: 1, padding: "36px 44px" }}>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: T.ink, letterSpacing: "-0.5px", marginBottom: 4 }}>Resume Tailor</h1>
+              <p style={{ color: T.muted, fontSize: 13, marginBottom: 32 }}>Select a job description — AI highlights changes and customises your resume to match it precisely.</p>
+
+              {msg && (
+                <div style={{ padding: "12px 16px", background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 12, color: T.emerald, fontSize: 13, fontWeight: 600, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>{msg}</span>
+                  {downloadLink && (
+                    <a href={downloadLink} target="_blank" rel="noopener noreferrer" style={{ background: T.emerald, color: "#fff", padding: "6px 12px", borderRadius: 8, textDecoration: "none", fontSize: 12 }}>
+                      Download PDF
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {err && (
+                <div style={{ padding: "12px 16px", background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.25)", borderRadius: 12, color: T.rose, fontSize: 13, fontWeight: 600, marginBottom: 20 }}>
+                  {err}
+                </div>
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                  {/* Select job & profile */}
+                  <div style={{ ...glass({ padding: "22px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)" }) }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: T.ink, marginBottom: 16 }}>Select Job & Resume Profile</div>
+                    
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 5 }}>Job Recommendation</div>
+                        <select
+                          value={selectedJobId}
+                          onChange={e => setSelectedJobId(e.target.value)}
+                          style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.9)", color: T.ink }}
+                        >
+                          <option value="">— choose job —</option>
+                          {window.JOBS.map(j => (
+                            <option key={j.id} value={j.id}>[{j.platform || '?'}] {j.title} @ {j.company || '?'}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 5 }}>Resume Profile</div>
+                        <select
+                          value={selectedProfileSlug}
+                          onChange={e => setSelectedProfileSlug(e.target.value)}
+                          style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.9)", color: T.ink }}
+                        >
+                          <option value="">Active / default profile</option>
+                          {window.PROFILES.map(p => (
+                            <option key={p.slug} value={p.slug} disabled={!p.has_parsed}>
+                              {p.name || p.slug} {p.active ? "(active)" : ""} {!p.has_parsed ? "— not parsed" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={runTailoring}
+                        disabled={loading || !window.HAS_PARSED_PROFILE}
+                        style={{ marginTop: 6, width: "100%", background: T.g2, color: T.white, padding: "12px", borderRadius: 11, fontSize: 13, fontWeight: 700, border: "none", cursor: (loading || !window.HAS_PARSED_PROFILE) ? "default" : "pointer", boxShadow: "0 4px 18px rgba(6,182,212,0.3)" }}
+                      >
+                        {loading ? "Analysing..." : "✦ Tailor My Resume"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Suggestions list */}
+                <div style={{ ...glass({ padding: "22px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)" }) }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: T.ink, marginBottom: 4 }}>AI Suggestions</div>
+                  <div style={{ fontSize: 12, color: T.faint, marginBottom: 18 }}>
+                    {diffs.length > 0 ? `${diffs.length} improvements found` : "Select job & profile to generate edits"}
+                  </div>
+
+                  {loading && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {[1, 2, 3].map(i => (
+                        <div key={i} style={{ height: 60, borderRadius: 11, background: "linear-gradient(90deg,#e2e8f0 25%,#eef0f8 50%,#e2e8f0 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite" }} />
+                      ))}
+                    </div>
+                  )}
+
+                  {diffs.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 320, overflowY: "auto", paddingRight: 4 }}>
+                        {diffs.map((d, i) => (
+                          <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "11px 13px", borderRadius: 11, background: "rgba(99,102,241,0.03)", border: "1px solid rgba(99,102,241,0.08)" }}>
+                            <input
+                              type="checkbox"
+                              checked={checkedIndices.includes(i)}
+                              onChange={() => handleCheckboxChange(i)}
+                              style={{ marginTop: 3, cursor: "pointer" }}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: T.indigo, display: "block", marginBottom: 3 }}>{d.section || "Skills"}</span>
+                              <div style={{ fontSize: 12, color: T.rose, textDecoration: "line-through", marginBottom: 2 }}>{d.original_text}</div>
+                              <div style={{ fontSize: 12, color: T.emerald, fontWeight: 500 }}>{d.suggested_text}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={handleAccept}
+                        style={{ marginTop: 12, width: "100%", background: T.g1, color: T.white, padding: "12px", borderRadius: 11, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 4px 18px rgba(99,102,241,0.3)" }}
+                      >
+                        Accept selected & generate PDF
+                      </button>
+                    </div>
+                  )}
+
+                  {!loading && diffs.length === 0 && (
+                    <div style={{ textAlign: "center", padding: "48px 0", color: T.faint }}>
+                      <div style={{ fontSize: 36, marginBottom: 10, opacity: .4 }}>◷</div>
+                      <div style={{ fontSize: 13 }}>Suggestions will appear here</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+    {% endraw %}
+  </script>
+
+  <script>
+    window.addEventListener('load', () => {
+      try {
+        const code = document.getElementById('react-code').textContent;
+        const transpiled = Babel.transform(code, {
+          presets: [
+            ['react', { runtime: 'classic' }],
+            ['env', { modules: false }]
+          ]
+        }).code;
+        
+        const script = document.createElement('script');
+        script.textContent = transpiled;
+        document.body.appendChild(script);
+        console.log("React page compiled successfully!");
+      } catch (err) {
+        console.error("React compilation error:", err);
+      }
+    });
+  </script>
+</body>
+</html>

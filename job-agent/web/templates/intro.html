@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to HireIQ.AI</title>
+  <!-- Load React 18 & ReactDOM -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Load Babel Standalone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #060913;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .text-3d {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(52px, 8vw, 88px);
+      font-weight: 900;
+      color: #FFFFFF;
+      letter-spacing: -2px;
+      margin: 0;
+      line-height: 1.1;
+      text-shadow: 
+        -1px 1px 0px #4f46e5,
+        -2px 2px 0px #4f46e5,
+        -3px 3px 0px #4f46e5,
+        -4px 4px 0px #4f46e5,
+        -5px 5px 0px #4f46e5,
+        -6px 6px 0px #4f46e5,
+        -7px 7px 0px #4f46e5,
+        -8px 8px 15px rgba(0, 0, 0, 0.7);
+    }
+
+    .text-3d-span {
+      color: #67e8f9;
+      text-shadow: 
+        -1px 1px 0px #0891b2,
+        -2px 2px 0px #0891b2,
+        -3px 3px 0px #0891b2,
+        -4px 4px 0px #0891b2,
+        -5px 5px 0px #0891b2,
+        -6px 6px 0px #0891b2,
+        -7px 7px 0px #0891b2,
+        -8px 8px 15px rgba(0, 0, 0, 0.7);
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(0.8);
+        opacity: 0.35;
+      }
+      50% {
+        transform: scale(1.15);
+        opacity: 0.95;
+      }
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #6366f1;
+      box-shadow: 0 0 12px rgba(99,102,241,0.85);
+      animation: pulse 1.4s infinite ease-in-out;
+    }
+
+    .dots-container {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    // Jinja2 injection to set the redirect target based on whether the user is logged in
+    window.REDIRECT_URL = "{{ '/home' if current_user else '/about' }}";
+  </script>
+
+  <script type="text/plain" id="react-code">
+    {% raw %}
+    const { useEffect } = React;
+
+    function SplashApp() {
+      // Determine if this is a page reload or a revisit in the current tab session
+      const getRedirectDelay = () => {
+        const isReload = 
+          (window.performance && window.performance.navigation && window.performance.navigation.type === 1) ||
+          (window.performance && window.performance.getEntriesByType && 
+           window.performance.getEntriesByType("navigation")[0] && 
+           window.performance.getEntriesByType("navigation")[0].type === "reload");
+
+        const hasVisited = sessionStorage.getItem("has_visited_intro");
+
+        if (isReload || hasVisited) {
+          console.log("Welcome page: refresh/reload detected. Setting delay to 4.5 seconds.");
+          return 4500; // 4.5 seconds on reload or refresh
+        }
+        
+        console.log("Welcome page: first-time open detected. Setting delay to 12 seconds.");
+        sessionStorage.setItem("has_visited_intro", "true");
+        return 12000; // 12 seconds on first open
+      };
+
+      useEffect(() => {
+        const delay = getRedirectDelay();
+        const timer = setTimeout(() => {
+          window.location.href = window.REDIRECT_URL || "/login";
+        }, delay);
+
+        return () => clearTimeout(timer);
+      }, []);
+
+      return (
+        <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {/* 3D Title */}
+          <h1 className="text-3d">
+            HireIQ<span className="text-3d-span">.AI</span>
+          </h1>
+          
+          {/* Tagline */}
+          <p style={{
+            fontFamily: "Georgia, Garamond, serif",
+            fontSize: "17px",
+            color: "rgba(255, 255, 255, 0.35)",
+            marginTop: 24,
+            marginBottom: 0,
+            letterSpacing: "0.5px"
+          }}>
+            Your Personal AI Career Copilot
+          </p>
+
+          {/* Glowing Loading Dots at the bottom */}
+          <div className="dots-container">
+            <div className="dot" style={{ animationDelay: "0s" }} />
+            <div className="dot" style={{ animationDelay: "0.2s" }} />
+            <div className="dot" style={{ animationDelay: "0.4s" }} />
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<SplashApp />);
+    {% endraw %}
+  </script>
+
+  <!-- Loader compiler script using Babel Standalone manually -->
+  <script>
+    window.addEventListener('load', () => {
+      try {
+        const code = document.getElementById('react-code').textContent;
+        const transpiled = Babel.transform(code, {
+          presets: [
+            ['react', { runtime: 'classic' }],
+            ['env', { modules: false }]
+          ]
+        }).code;
+        
+        const script = document.createElement('script');
+        script.textContent = transpiled;
+        document.body.appendChild(script);
+        console.log("Splash screen compilation successful!");
+      } catch (err) {
+        console.error("Splash screen compilation error:", err);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HireIQ.AI - AI Career Copilot</title>
+  <!-- Load React 18 & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <!-- Load Babel Standalone for JSX compilation in browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #EEF0F8;
+      overflow: hidden;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/plain" id="careerlens-code">
+    const { useState, useEffect } = React;
+
+    const T = {
+      sidebar: "#0A0F1E", sidebarText: "rgba(255,255,255,0.5)", sidebarBorder: "rgba(255,255,255,0.07)",
+      bg: "#EEF0F8", ink: "#0F172A", muted: "#64748B", faint: "#94A3B8", white: "#fff",
+      indigo: "#6366F1", indigoL: "#EEF2FF", violet: "#8B5CF6",
+      cyan: "#06B6D4", emerald: "#10B981", amber: "#F59E0B", rose: "#F43F5E",
+      g1: "linear-gradient(135deg,#6366F1,#8B5CF6)",
+      g2: "linear-gradient(135deg,#06B6D4,#6366F1)",
+      g3: "linear-gradient(135deg,#10B981,#06B6D4)",
+      g4: "linear-gradient(135deg,#F43F5E,#F59E0B)",
+      g5: "linear-gradient(135deg,#8B5CF6,#F43F5E)",
+    };
+
+    const glass = (ex={}) => ({ background:"rgba(255,255,255,0.75)", border:"1px solid rgba(255,255,255,0.6)", backdropFilter:"blur(18px)", WebkitBackdropFilter:"blur(18px)", borderRadius:18, ...ex });
+    const sc = s => s>=80 ? T.emerald : s>=60 ? T.amber : T.rose;
+
+    // ── NAV ITEMS
+    const NAV = [
+      {id:"home", label:"Home", icon:"⚡"},
+      {id:"dashboard", label:"Dashboard", icon:"▦"},
+      {id:"jobs", label:"Jobs", icon:"◎"},
+      {id:"resume", label:"Resume Tailor", icon:"◷"},
+      {id:"ats", label:"ATS Score", icon:"◉"},
+      {id:"cover", label:"Cover Letter", icon:"✦"},
+    ];
+
+    // ── ORBS
+    function Orbs({c=["#6366F1","#8B5CF6","#06B6D4"]}) {
+      return <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none",zIndex:0}}>
+        {c.map((col,i)=><div key={i} style={{position:"absolute",width:280+i*60,height:280+i*60,borderRadius:"50%",background:col,opacity:.07,filter:"blur(55px)",top:`${[15,55,35][i]}%`,left:`${[15,60,45][i]}%`,transform:"translate(-50%,-50%)"}}/>)}
+      </div>;
+    }
+
+    // ── SIDEBAR
+    function Sidebar({page,setPage}) {
+      return <div style={{width:228,flexShrink:0,background:"linear-gradient(180deg,#0A0F1E,#0C1226)",borderRight:`1px solid ${T.sidebarBorder}`,display:"flex",flexDirection:"column",padding:"24px 14px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:T.indigo,opacity:.07,filter:"blur(50px)",bottom:-30,left:-30,pointerEvents:"none"}}/>
+        {/* Logo */}
+        <div style={{padding:"2px 10px 24px",borderBottom:`1px solid ${T.sidebarBorder}`,marginBottom:18}}>
+          <div style={{fontFamily:"'Segoe UI',sans-serif",fontSize:19,fontWeight:800,color:T.white,letterSpacing:"-0.5px"}}>
+            HireIQ<span style={{background:T.g1,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>.AI</span>
+          </div>
+          <div style={{fontSize:8,color:T.sidebarText,marginTop:4,letterSpacing:"0.2px",lineHeight:1.3}}>From Resume to Offer ---- Your Personal AI Carrer Copilot</div>
+        </div>
+        {/* Nav */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
+          {NAV.map(n=>{
+            const a=page===n.id;
+            return <div key={n.id} onClick={()=>setPage(n.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:11,background:a?"rgba(99,102,241,0.18)":"transparent",border:a?"1px solid rgba(99,102,241,0.28)":"1px solid transparent",cursor:"pointer",position:"relative",transition:"all 0.18s"}}>
+              {a&&<div style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",width:3,height:18,background:T.g1,borderRadius:"0 3px 3px 0"}}/>}
+              <span style={{fontSize:15,opacity:a?1:.45}}>{n.icon}</span>
+              <span style={{fontSize:13,fontWeight:a?700:400,color:a?T.white:T.sidebarText}}>{n.label}</span>
+              {n.id==="jobs"&&<span style={{marginLeft:"auto",fontSize:10,fontWeight:700,background:T.g1,color:T.white,borderRadius:20,padding:"1px 7px"}}>24</span>}
+            </div>;
+          })}
+        </div>
+        {/* User */}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px",borderRadius:12,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:T.g1,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,color:T.white,flexShrink:0}}>A</div>
+          <div><div style={{fontSize:12,fontWeight:600,color:T.white}}>Alex Johnson</div><div style={{fontSize:10,color:T.sidebarText}}>Pro Plan</div></div>
+        </div>
+      </div>;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // PAGE: HOME
+    // ══════════════════════════════════════════════════════
+    function Home({setPage}) {
+      const stats=[{v:"2.4M+",l:"Jobs Matched",g:T.g1},{v:"87%",l:"Avg Match Rate",g:T.g3},{v:"48K",l:"Users Hired",g:T.g2},{v:"93%",l:"ATS Pass Rate",g:T.g4}];
+      const feats=[
+        {icon:"🤖",t:"AI Job Matching",d:"Scrapes 50+ platforms live and scores every role against your resume in real-time.",g:T.g1},
+        {icon:"📄",t:"Resume Tailor",d:"Rewrites your resume for any specific job in seconds — keyword-optimised and ATS-ready.",g:T.g2},
+        {icon:"🎯",t:"ATS Score",d:"See exactly how recruiter bots read your resume and fix it before they ghost you.",g:T.g3},
+        {icon:"✉️",t:"Cover Letter AI",d:"Role-specific cover letters grounded in your actual experience — not generic templates.",g:T.g5},
+      ];
+      return <div style={{flex:1,overflowY:"auto",background:T.bg,position:"relative"}}>
+        <Orbs/>
+        <div style={{position:"relative",zIndex:1,padding:"52px 44px"}}>
+          {/* Hero */}
+          <div style={{textAlign:"center",marginBottom:60}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:7,padding:"5px 14px",borderRadius:20,...glass(),fontSize:11,fontWeight:700,color:T.indigo,marginBottom:24,letterSpacing:"0.5px"}}>
+              <span style={{width:6,height:6,borderRadius:"50%",background:T.emerald,display:"inline-block"}}/>
+              From Resume to Offer ---- Your Personal AI Carrer Copilot
+            </div>
+            <h1 style={{fontSize:"clamp(36px,4.5vw,62px)",fontWeight:800,color:T.ink,lineHeight:1.05,letterSpacing:"-1.5px",marginBottom:18,fontFamily:"system-ui,sans-serif"}}>
+              Land your dream job<br/>
+              <span style={{background:T.g1,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>10× faster.</span>
+            </h1>
+            <p style={{fontSize:16,color:T.muted,maxWidth:500,margin:"0 auto 32px",lineHeight:1.75}}>
+              HireIQ.AI is your AI agent that searches, scores, tailors, and applies — so you spend time on interviews, not spreadsheets.
+            </p>
+            <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
+              <button onClick={()=>setPage("dashboard")} style={{background:T.g1,color:T.white,padding:"13px 30px",borderRadius:13,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 8px 28px rgba(99,102,241,0.38)"}}>Open Dashboard →</button>
+              <button onClick={()=>setPage("jobs")} style={{padding:"13px 26px",borderRadius:13,fontSize:14,fontWeight:600,color:T.ink,border:"1.5px solid rgba(15,23,42,0.1)",...glass(),cursor:"pointer"}}>Browse Jobs</button>
+            </div>
+          </div>
+          {/* Stats */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:48}}>
+            {stats.map((s,i)=><div key={i} style={{...glass({padding:"22px 18px",textAlign:"center",boxShadow:"0 8px 28px rgba(99,102,241,0.08)",transition:"transform 0.3s",cursor:"default"})}}>
+              <div style={{fontSize:"clamp(24px,3vw,30px)",fontWeight:800,background:s.g,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{s.v}</div>
+              <div style={{fontSize:11,color:T.muted,marginTop:4,fontWeight:500}}>{s.l}</div>
+            </div>)}
+          </div>
+          {/* Features */}
+          <h2 style={{fontSize:22,fontWeight:800,color:T.ink,marginBottom:20,letterSpacing:"-0.5px"}}>Everything in one agent</h2>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:16}}>
+            {feats.map((f,i)=><div key={i} style={{...glass({padding:"26px 22px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)",cursor:"default"})}}>
+              <div style={{width:44,height:44,borderRadius:13,background:f.g,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,marginBottom:14,boxShadow:"0 6px 20px rgba(99,102,241,0.28)"}}>{f.icon}</div>
+              <div style={{fontWeight:700,fontSize:15,color:T.ink,marginBottom:7}}>{f.t}</div>
+              <div style={{fontSize:13,color:T.muted,lineHeight:1.7}}>{f.d}</div>
+            </div>)}
+          </div>
+        </div>
+      </div>;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // PAGE: DASHBOARD
+    // ══════════════════════════════════════════════════════
+    function Dashboard({setPage}) {
+      const [anim,setAnim]=useState(false);
+      useEffect(()=>{setTimeout(()=>setAnim(true),200);},[]);
+      const kpis=[{v:"247",l:"Jobs Scraped",s:"+12 today",g:T.g1},{v:"94%",l:"Top Match",s:"Flipkart · DA",g:T.g3},{v:"11",l:"Applied",s:"3 in review",g:T.g2},{v:"2",l:"Interviews",s:"This week",g:T.g4}];
+      const recent=[{t:"Senior Data Analyst",c:"Flipkart",s:94,tag:"Applied"},{t:"Product Analyst",c:"Razorpay",s:81,tag:"Saved"},{t:"BI Developer",c:"Deloitte",s:73,tag:"Tailored"},{t:"Data Scientist",c:"Meesho",s:62,tag:"Viewed"}];
+      const acts=[{l:"Search Jobs",p:"jobs",g:T.g1},{l:"Tailor Resume",p:"resume",g:T.g2},{l:"Check ATS",p:"ats",g:T.g3},{l:"Cover Letter",p:"cover",g:T.g5}];
+      const tcolor={Applied:T.indigo,Saved:T.emerald,Tailored:T.amber,Viewed:T.faint};
+      const tbg={Applied:T.indigoL,Saved:"#F0FDF4",Tailored:"#FFFBEB",Viewed:"#F8FAFC"};
+      return <div style={{flex:1,overflowY:"auto",background:T.bg,position:"relative"}}>
+        <Orbs c={["#6366F1","#06B6D4","#10B981"]}/>
+        <div style={{position:"relative",zIndex:1,padding:"36px 44px"}}>
+          <div style={{marginBottom:28}}>
+            <h1 style={{fontSize:26,fontWeight:800,color:T.ink,letterSpacing:"-0.5px"}}>Good morning, Alex 👋</h1>
+            <p style={{color:T.muted,fontSize:13,marginTop:4}}>Your AI agent found 12 new matches overnight.</p>
+          </div>
+          {/* KPIs */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
+            {kpis.map((k,i)=><div key={i} style={{...glass({padding:"20px 18px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div style={{width:32,height:32,borderRadius:10,background:k.g,display:"flex",alignItems:"center",justifyContent:"center",color:T.white,fontSize:14}}>◈</div>
+                <span style={{fontSize:9,color:T.faint,fontWeight:600,letterSpacing:"0.5px"}}>LIVE</span>
+              </div>
+              <div style={{fontSize:28,fontWeight:800,color:T.ink}}>{k.v}</div>
+              <div style={{fontSize:11,color:T.muted,marginTop:2}}>{k.l}</div>
+              <div style={{fontSize:10,color:T.faint,marginTop:3}}>{k.s}</div>
+            </div>)}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 320px",gap:18}}>
+            {/* Recent */}
+            <div style={{...glass({padding:"22px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                <div style={{fontWeight:700,fontSize:14,color:T.ink}}>Recent Matches</div>
+                <span onClick={()=>setPage("jobs")} style={{fontSize:12,color:T.indigo,cursor:"pointer",fontWeight:600}}>See all →</span>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {recent.map((j,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:14,padding:"12px 14px",borderRadius:12,background:"rgba(99,102,241,0.03)",border:"1px solid rgba(99,102,241,0.06)"}}>
+                  <div style={{width:36,height:36,borderRadius:10,background:T.g1,opacity:0.18+i*0.06,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,color:T.indigo,flexShrink:0}}>{j.c[0]}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:600,color:T.ink}}>{j.t}</div>
+                    <div style={{fontSize:11,color:T.muted}}>{j.c}</div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:72}}>
+                      <div style={{fontSize:10,color:T.muted,textAlign:"right",marginBottom:3}}>{j.s}%</div>
+                      <div style={{height:4,borderRadius:2,background:"rgba(0,0,0,0.06)",overflow:"hidden"}}>
+                        <div style={{height:"100%",width:anim?`${j.s}%`:"0%",background:sc(j.s),borderRadius:2,transition:"width 1.2s cubic-bezier(.17,.67,.35,1.2)"}}/>
+                      </div>
+                    </div>
+                    <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:20,background:tbg[j.tag],color:tcolor[j.tag]}}>{j.tag}</span>
+                  </div>
+                </div>)}
+              </div>
+            </div>
+            {/* Right col */}
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              <div style={{...glass({padding:"20px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+                <div style={{fontWeight:700,fontSize:14,color:T.ink,marginBottom:14}}>Quick Actions</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  {acts.map((a,i)=><button key={i} onClick={()=>setPage(a.p)} style={{background:a.g,color:T.white,padding:"13px 8px",borderRadius:12,fontSize:11,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(99,102,241,0.25)",transition:"transform 0.2s"}}>{a.l}</button>)}
+                </div>
+              </div>
+              <div style={{...glass({padding:"18px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+                <div style={{fontWeight:700,fontSize:13,color:T.ink,marginBottom:12}}>Profile Strength</div>
+                {[["Resume uploaded",true],["Skills tagged",true],["Location set",true],["Portfolio link",false]].map(([l,done],i)=><div key={i} style={{display:"flex",alignItems:"center",gap:9,marginBottom:8}}>
+                  <div style={{width:17,height:17,borderRadius:"50%",background:done?T.emerald:"rgba(0,0,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:T.white,flexShrink:0}}>{done?"✓":""}</div>
+                  <span style={{fontSize:12,color:done?T.ink:T.faint}}>{l}</span>
+                </div>)}
+                <div style={{marginTop:10,height:5,borderRadius:3,background:"rgba(0,0,0,0.06)"}}>
+                  <div style={{width:"75%",height:"100%",background:T.g3,borderRadius:3}}/>
+                </div>
+                <div style={{fontSize:10,color:T.muted,marginTop:5}}>75% complete</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // PAGE: JOBS
+    // ══════════════════════════════════════════════════════
+    const JOBS=[
+      {id:1,t:"Senior Data Analyst",c:"Flipkart",loc:"Bengaluru",type:"Full-time",s:94,src:"LinkedIn",tags:["Python","SQL","Tableau"],sal:"₹18–24 LPA",d:"Lead analytics for the Marketplace team. Build dashboards, own A/B test analysis, and partner with PMs to drive growth."},
+      {id:2,t:"Business Analyst",c:"Infosys",loc:"Hyderabad",type:"Full-time",s:78,src:"Naukri",tags:["SQL","Excel","Stakeholder Mgmt"],sal:"₹12–16 LPA",d:"Bridge business teams and data. Define KPIs, analyse operational processes, and present to senior leadership."},
+      {id:3,t:"Data Scientist",c:"Razorpay",loc:"Remote",type:"Full-time",s:67,src:"Indeed",tags:["Python","ML","Stats"],sal:"₹20–30 LPA",d:"Build predictive models for fraud detection and payment optimisation. Production ML experience required."},
+      {id:4,t:"BI Developer",c:"Deloitte",loc:"Mumbai",type:"Contract",s:54,src:"LinkedIn",tags:["Power BI","DAX","SQL"],sal:"₹10–14 LPA",d:"Design and maintain Power BI dashboards for enterprise clients across BFSI and retail verticals."},
+      {id:5,t:"Product Analyst",c:"Meesho",loc:"Bengaluru",type:"Full-time",s:48,src:"Indeed",tags:["SQL","Mixpanel","A/B Tests"],sal:"₹14–20 LPA",d:"Partner with Product and Design to identify growth levers, define metrics, and run experiments."},
+    ];
+
+    function Jobs() {
+      const [q,setQ]=useState(""); const [loading,setLoading]=useState(false);
+      const [jobs,setJobs]=useState(JOBS); const [sel,setSel]=useState(JOBS[0]);
+      const search=()=>{if(!q.trim())return;setLoading(true);setJobs([]);setTimeout(()=>{setJobs(JOBS);setSel(JOBS[0]);setLoading(false);},1600);};
+      return <div style={{flex:1,display:"flex",flexDirection:"column",background:T.bg,overflow:"hidden"}}>
+        {/* Search */}
+        <div style={{padding:"18px 28px",borderBottom:"1px solid rgba(15,23,42,0.07)",background:"rgba(255,255,255,0.6)",backdropFilter:"blur(12px)"}}>
+          <div style={{display:"flex",gap:10,maxWidth:640}}>
+            <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&search()} placeholder="Search roles — e.g. Data Analyst, Product Manager…" style={{flex:1,padding:"12px 16px",border:"1.5px solid rgba(15,23,42,0.1)",borderRadius:12,fontSize:13,fontFamily:"inherit",color:T.ink,background:"rgba(255,255,255,0.9)",outline:"none"}}/>
+            <button onClick={search} style={{background:T.g1,color:T.white,padding:"12px 24px",borderRadius:12,fontSize:13,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 18px rgba(99,102,241,0.32)",whiteSpace:"nowrap"}}>{loading?"Scraping…":"Search"}</button>
+          </div>
+        </div>
+        <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+          {/* List */}
+          <div style={{width:320,borderRight:"1px solid rgba(15,23,42,0.06)",overflowY:"auto",padding:"14px"}}>
+            {loading?[1,2,3].map(i=><div key={i} style={{height:96,borderRadius:14,marginBottom:10,background:"linear-gradient(90deg,#e2e8f0 25%,#eef0f8 50%,#e2e8f0 75%)",backgroundSize:"200% 100%",animation:"shimmer 1.4s infinite"}}/>):
+            jobs.map(j=><div key={j.id} onClick={()=>setSel(j)} style={{...glass({padding:"14px",marginBottom:9,cursor:"pointer",border:sel?.id===j.id?"1.5px solid rgba(99,102,241,0.3)":"1px solid rgba(255,255,255,0.6)",background:sel?.id===j.id?"rgba(99,102,241,0.07)":"rgba(255,255,255,0.75)",transition:"all 0.18s"})}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:T.ink,marginBottom:2}}>{j.t}</div>
+                  <div style={{fontSize:11,color:T.muted,marginBottom:8}}>{j.c} · {j.loc}</div>
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{j.tags.slice(0,2).map(t=><span key={t} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:T.indigoL,color:T.indigo}}>{t}</span>)}</div>
+                </div>
+                <div style={{marginLeft:10,textAlign:"center"}}>
+                  <div style={{fontSize:18,fontWeight:900,color:sc(j.s)}}>{j.s}%</div>
+                  <div style={{fontSize:9,color:T.faint,fontWeight:600}}>MATCH</div>
+                </div>
+              </div>
+            </div>)}
+          </div>
+          {/* Detail */}
+          {sel&&<div style={{flex:1,overflowY:"auto",padding:"28px 32px"}}>
+            <div style={{maxWidth:640}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+                <div>
+                  <h2 style={{fontSize:24,fontWeight:800,color:T.ink,letterSpacing:"-0.5px"}}>{sel.t}</h2>
+                  <div style={{fontSize:13,color:T.muted,marginTop:4}}>{sel.c} · {sel.loc} · {sel.type}</div>
+                </div>
+                {/* 3D score orb */}
+                <div style={{width:82,height:82,borderRadius:"50%",background:T.g1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",boxShadow:"0 10px 36px rgba(99,102,241,0.42)",flexShrink:0,border:"3px solid rgba(255,255,255,0.4)"}}>
+                  <div style={{fontSize:20,fontWeight:900,color:T.white}}>{sel.s}%</div>
+                  <div style={{fontSize:8,color:"rgba(255,255,255,0.7)",fontWeight:600}}>MATCH</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+                {sel.tags.map(t=><span key={t} style={{fontSize:12,fontWeight:600,padding:"5px 13px",borderRadius:20,background:T.indigoL,color:T.indigo}}>{t}</span>)}
+                <span style={{fontSize:12,fontWeight:600,padding:"5px 13px",borderRadius:20,background:"#F0FDF4",color:T.emerald}}>{sel.sal}</span>
+              </div>
+              <p style={{fontSize:14,color:T.muted,lineHeight:1.8,marginBottom:28}}>{sel.d}</p>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:12}}>
+                {["◉ ATS Score","◷ Tailor Resume","✦ Cover Letter"].map((l,i)=><button key={i} style={{padding:"12px 8px",borderRadius:12,fontSize:12,fontWeight:700,border:"1.5px solid rgba(15,23,42,0.09)",background:"rgba(255,255,255,0.9)",color:T.ink,cursor:"pointer",backdropFilter:"blur(8px)"}}>{l}</button>)}
+              </div>
+              <button style={{width:"100%",background:T.g1,color:T.white,padding:"14px",borderRadius:13,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 6px 28px rgba(99,102,241,0.36)"}}>Apply on {sel.src} →</button>
+            </div>
+          </div>}
+        </div>
+      </div>;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // PAGE: RESUME TAILOR
+    // ══════════════════════════════════════════════════════
+    function Resume() {
+      const [jd,setJd]=useState(""); const [loading,setLoading]=useState(false);
+      const [done,setDone]=useState(false); const [file,setFile]=useState(null); const [drag,setDrag]=useState(false);
+      const run=()=>{if(!jd)return;setLoading(true);setDone(false);setTimeout(()=>{setLoading(false);setDone(true);},2000);};
+      const sugg=[{k:"add",t:'Add "dbt" to skills — appears 5× in the JD'},{k:"add",t:'Quantify impact: "Reduced reporting time by 40%"'},{k:"change",t:'Lead summary with "data-driven decision making"'},{k:"remove",t:'Remove outdated "MS Access" from skills'},{k:"add",t:'Add stakeholder management to 2 experience bullets'}];
+      const tc={add:T.emerald,change:T.amber,remove:T.rose};
+      const ti={add:"+",change:"~",remove:"−"};
+      return <div style={{flex:1,overflowY:"auto",background:T.bg,position:"relative"}}>
+        <Orbs c={["#06B6D4","#6366F1","#8B5CF6"]}/>
+        <div style={{position:"relative",zIndex:1,padding:"36px 44px"}}>
+          <h1 style={{fontSize:24,fontWeight:800,color:T.ink,letterSpacing:"-0.5px",marginBottom:4}}>Resume Tailor</h1>
+          <p style={{color:T.muted,fontSize:13,marginBottom:32}}>Paste a job description — AI rewrites your resume to match it precisely.</p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:22}}>
+            <div style={{display:"flex",flexDirection:"column",gap:18}}>
+              {/* Upload */}
+              <div style={{...glass({padding:"22px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+                <div style={{fontSize:13,fontWeight:700,color:T.ink,marginBottom:12}}>Your Resume</div>
+                <div onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);setFile(e.dataTransfer.files[0]);}} onClick={()=>document.getElementById("rf").click()} style={{border:`2px dashed ${drag?T.indigo:"rgba(15,23,42,0.12)"}`,borderRadius:13,padding:"28px 18px",textAlign:"center",background:drag?"rgba(99,102,241,0.04)":"transparent",cursor:"pointer",transition:"all 0.2s"}}>
+                  <div style={{fontSize:26,marginBottom:7}}>📄</div>
+                  <div style={{fontSize:13,fontWeight:600,color:T.ink}}>{file?file.name:"Drop PDF or DOCX here"}</div>
+                  <div style={{fontSize:11,color:T.faint,marginTop:3}}>or click to browse</div>
+                  <input id="rf" type="file" accept=".pdf,.docx" style={{display:"none"}} onChange={e=>setFile(e.target.files[0])}/>
+                </div>
+              </div>
+              {/* JD */}
+              <div style={{...glass({padding:"22px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+                <div style={{fontSize:13,fontWeight:700,color:T.ink,marginBottom:12}}>Job Description</div>
+                <textarea value={jd} onChange={e=>setJd(e.target.value)} placeholder="Paste the full job description here…" style={{width:"100%",height:130,padding:"11px 13px",border:"1.5px solid rgba(15,23,42,0.1)",borderRadius:11,fontSize:13,fontFamily:"inherit",color:T.ink,resize:"none",background:"rgba(255,255,255,0.9)",outline:"none"}}/>
+                <button onClick={run} style={{marginTop:10,width:"100%",background:T.g2,color:T.white,padding:"12px",borderRadius:11,fontSize:13,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 18px rgba(6,182,212,0.3)"}}>
+                  {loading?"Analysing…":"✦ Tailor My Resume"}
+                </button>
+              </div>
+            </div>
+            {/* Suggestions */}
+            <div style={{...glass({padding:"22px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+              <div style={{fontSize:13,fontWeight:700,color:T.ink,marginBottom:4}}>AI Suggestions</div>
+              <div style={{fontSize:12,color:T.faint,marginBottom:18}}>{done?`${sugg.length} improvements found`:"Waiting for job description…"}</div>
+              {loading&&<div style={{display:"flex",flexDirection:"column",gap:10}}>{[1,2,3].map(i=><div key={i} style={{height:50,borderRadius:11,background:"linear-gradient(90deg,#e2e8f0 25%,#eef0f8 50%,#e2e8f0 75%)",backgroundSize:"200% 100%",animation:"shimmer 1.4s infinite"}}/>)}</div>}
+              {done&&<div style={{display:"flex",flexDirection:"column",gap:9}}>
+                {sugg.map((s,i)=><div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"11px 13px",borderRadius:11,background:`${tc[s.k]}10`,border:`1px solid ${tc[s.k]}25`}}>
+                  <div style={{width:20,height:20,borderRadius:"50%",background:tc[s.k],color:T.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>{ti[s.k]}</div>
+                  <span style={{fontSize:13,color:T.ink,lineHeight:1.5}}>{s.t}</span>
+                </div>)}
+                <button style={{marginTop:6,width:"100%",background:T.g1,color:T.white,padding:"11px",borderRadius:11,fontSize:13,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 18px rgba(99,102,241,0.3)"}}>Download Tailored Resume →</button>
+              </div>}
+              {!done&&!loading&&<div style={{textAlign:"center",padding:"48px 0",color:T.faint}}>
+                <div style={{fontSize:36,marginBottom:10,opacity:.4}}>◷</div>
+                <div style={{fontSize:13}}>Suggestions appear here</div>
+              </div>}
+            </div>
+          </div>
+        </div>
+      </div>;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // PAGE: ATS SCORE
+    // ══════════════════════════════════════════════════════
+    function ATS() {
+      const [jd,setJd]=useState(""); const [loading,setLoading]=useState(false);
+      const [result,setResult]=useState(false); const [anim,setAnim]=useState(false);
+      const run=()=>{setLoading(true);setResult(false);setAnim(false);setTimeout(()=>{setLoading(false);setResult(true);setTimeout(()=>setAnim(true),80);},2200);};
+      const cats=[{l:"Keyword Match",s:72,d:"28 of 39 keywords found"},{l:"Format & Structure",s:88,d:"Clean sections, readable"},{l:"Skills Alignment",s:65,d:"Missing: dbt, Snowflake"},{l:"Experience Relevance",s:84,d:"3 relevant roles detected"},{l:"Education Match",s:90,d:"Degree requirement met"}];
+      const missing=["dbt","Snowflake","BigQuery","ELT","Looker","Airflow"];
+      const present=["Python","SQL","Power BI","Excel","Tableau","Data Modelling"];
+      const overall=80;
+      return <div style={{flex:1,overflowY:"auto",background:T.bg,position:"relative"}}>
+        <Orbs c={["#10B981","#6366F1","#F59E0B"]}/>
+        <div style={{position:"relative",zIndex:1,padding:"36px 44px"}}>
+          <h1 style={{fontSize:24,fontWeight:800,color:T.ink,letterSpacing:"-0.5px",marginBottom:4}}>ATS Score Checker</h1>
+          <p style={{color:T.muted,fontSize:13,marginBottom:32}}>See exactly how recruiter bots read your resume — fix it before they ghost you.</p>
+          {!result&&!loading&&<div style={{maxWidth:520,...glass({padding:"28px",boxShadow:"0 8px 32px rgba(99,102,241,0.09)"})}}>
+            <div style={{fontSize:13,fontWeight:700,color:T.ink,marginBottom:10}}>Paste Job Description</div>
+            <textarea value={jd} onChange={e=>setJd(e.target.value)} placeholder="Paste the job description you're applying to…" style={{width:"100%",height:150,padding:"11px 13px",border:"1.5px solid rgba(15,23,42,0.1)",borderRadius:11,fontSize:13,fontFamily:"inherit",color:T.ink,resize:"none",background:"rgba(255,255,255,0.9)",outline:"none",marginBottom:14}}/>
+            <button onClick={run} style={{width:"100%",background:T.g3,color:T.white,padding:"13px",borderRadius:12,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 22px rgba(16,185,129,0.34)"}}>◉ Run ATS Analysis</button>
+          </div>}
+          {loading&&<div style={{textAlign:"center",padding:"80px 0"}}>
+            <div style={{fontSize:44,marginBottom:14,display:"inline-block",animation:"spin 1.1s linear infinite"}}>◉</div>
+            <div style={{fontWeight:700,fontSize:15,color:T.ink,marginBottom:4}}>Scanning your resume…</div>
+            <div style={{fontSize:13,color:T.muted}}>Comparing keywords, structure, and alignment</div>
+          </div>}
+          {result&&<div style={{display:"grid",gridTemplateColumns:"260px 1fr",gap:22}}>
+            {/* Score orb */}
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              <div style={{...glass({padding:"28px 20px",textAlign:"center",boxShadow:"0 12px 40px rgba(16,185,129,0.18)"})}}>
+                <div style={{position:"relative",width:110,height:110,margin:"0 auto 16px"}}>
+                  <svg viewBox="0 0 110 110" style={{width:"100%",height:"100%",position:"absolute",inset:0}}>
+                    <circle cx="55" cy="55" r="46" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="9"/>
+                    <circle cx="55" cy="55" r="46" fill="none" stroke={T.emerald} strokeWidth="9"
+                      strokeDasharray={`${anim?overall/100*289:0} 289`} strokeLinecap="round" transform="rotate(-90 55 55)"
+                      style={{transition:"stroke-dasharray 1.4s cubic-bezier(.17,.67,.35,1.2)"}}/>
+                  </svg>
+                  <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                    <div style={{fontSize:26,fontWeight:900,color:T.emerald}}>{overall}</div>
+                    <div style={{fontSize:9,color:T.muted,fontWeight:600}}>/100</div>
+                  </div>
+                </div>
+                <div style={{fontWeight:700,fontSize:14,color:T.ink}}>ATS Score</div>
+                <div style={{fontSize:12,color:T.emerald,fontWeight:600,marginTop:3}}>Likely to Pass ✓</div>
+              </div>
+              <button onClick={()=>{setResult(false);setJd("");}} style={{padding:"11px",borderRadius:12,fontSize:13,fontWeight:600,border:"1.5px solid rgba(15,23,42,0.1)",background:"rgba(255,255,255,0.85)",color:T.ink,cursor:"pointer"}}>← Check Another</button>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              <div style={{...glass({padding:"22px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+                <div style={{fontWeight:700,fontSize:13,color:T.ink,marginBottom:16}}>Score Breakdown</div>
+                {cats.map((c,i)=><div key={i} style={{marginBottom:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                    <span style={{fontSize:12,fontWeight:600,color:T.ink}}>{c.l}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:sc(c.s)}}>{c.s}%</span>
+                  </div>
+                  <div style={{height:5,borderRadius:3,background:"rgba(0,0,0,0.06)",overflow:"hidden",marginBottom:3}}>
+                    <div style={{height:"100%",width:anim?`${c.s}%`:"0%",background:sc(c.s),borderRadius:3,transition:"width 1.2s cubic-bezier(.17,.67,.35,1.2)"}}/>
+                  </div>
+                  <div style={{fontSize:10,color:T.faint}}>{c.d}</div>
+                </div>)}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                <div style={{...glass({padding:"18px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+                  <div style={{fontSize:11,fontWeight:700,color:T.emerald,marginBottom:10}}>✓ Found</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{present.map(k=><span key={k} style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#F0FDF4",color:T.emerald}}>{k}</span>)}</div>
+                </div>
+                <div style={{...glass({padding:"18px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+                  <div style={{fontSize:11,fontWeight:700,color:T.rose,marginBottom:10}}>✕ Missing</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{missing.map(k=><span key={k} style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FFF1F2",color:T.rose}}>{k}</span>)}</div>
+                </div>
+              </div>
+            </div>
+          </div>}
+        </div>
+      </div>;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // PAGE: COVER LETTER
+    // ══════════════════════════════════════════════════════
+    function Cover() {
+      const [form,setForm]=useState({name:"Alex Johnson",role:"",company:"",tone:"Professional"});
+      const [loading,setLoading]=useState(false); const [letter,setLetter]=useState(""); const [copied,setCopied]=useState(false);
+      const TONES=["Professional","Enthusiastic","Concise","Creative"];
+      const gen=()=>{
+        setLoading(true);setLetter("");
+        const txt=`Dear Hiring Team at ${form.company||"the company"},\n\nI'm writing to express my genuine interest in the ${form.role||"open role"} position. With 3+ years of experience in data analysis — spanning Python, SQL, and Power BI — I've built dashboards and models that directly shaped business decisions.\n\nAt my current role, I led a reporting overhaul that reduced time-to-insight by 40% and enabled our growth team to launch 3 campaigns they otherwise couldn't have justified. I'm drawn to ${form.company||"your company"}'s culture of data-driven decision making, and I believe my background is a strong fit.\n\nI'd love to discuss how I can bring that same rigour to your team.\n\nWarm regards,\n${form.name}`;
+        let i=0;
+        const iv=setInterval(()=>{setLetter(txt.slice(0,i));i+=5;if(i>txt.length){clearInterval(iv);setLoading(false);}},16);
+      };
+      return <div style={{flex:1,overflowY:"auto",background:T.bg,position:"relative"}}>
+        <Orbs c={["#8B5CF6","#F43F5E","#6366F1"]}/>
+        <div style={{position:"relative",zIndex:1,padding:"36px 44px"}}>
+          <h1 style={{fontSize:24,fontWeight:800,color:T.ink,letterSpacing:"-0.5px",marginBottom:4}}>Cover Letter AI</h1>
+          <p style={{color:T.muted,fontSize:13,marginBottom:32}}>Role-specific, resume-grounded cover letters — not generic templates.</p>
+          <div style={{display:"grid",gridTemplateColumns:"320px 1fr",gap:22}}>
+            {/* Form */}
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              <div style={{...glass({padding:"22px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)"})}}>
+                <div style={{fontWeight:700,fontSize:14,color:T.ink,marginBottom:18}}>Personalise</div>
+                <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                  {[["Your Name","name","Alex Johnson"],["Job Title","role","Senior Data Analyst"],["Company","company","Flipkart"]].map(([label,key,ph])=><div key={key}>
+                    <div style={{fontSize:11,fontWeight:600,color:T.muted,marginBottom:5}}>{label}</div>
+                    <input value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})} placeholder={ph} style={{width:"100%",padding:"10px 13px",border:"1.5px solid rgba(15,23,42,0.1)",borderRadius:10,fontSize:13,fontFamily:"inherit",color:T.ink,background:"rgba(255,255,255,0.9)",outline:"none"}}/>
+                  </div>)}
+                  <div>
+                    <div style={{fontSize:11,fontWeight:600,color:T.muted,marginBottom:7}}>Tone</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                      {TONES.map(t=><button key={t} onClick={()=>setForm({...form,tone:t})} style={{padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:600,border:"none",cursor:"pointer",background:form.tone===t?T.indigo:"rgba(99,102,241,0.08)",color:form.tone===t?T.white:T.indigo,transition:"all 0.15s"}}>{t}</button>)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button onClick={gen} style={{background:T.g5,color:T.white,padding:"13px",borderRadius:12,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 6px 28px rgba(139,92,246,0.38)"}}>
+                {loading?"Writing…":"✦ Generate Cover Letter"}
+              </button>
+            </div>
+            {/* Output */}
+            <div style={{...glass({padding:"24px",boxShadow:"0 6px 24px rgba(99,102,241,0.07)",minHeight:400})}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+                <div style={{fontWeight:700,fontSize:14,color:T.ink}}>Generated Letter</div>
+                {letter&&<div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>{navigator.clipboard?.writeText(letter).catch(()=>{});setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{padding:"6px 13px",borderRadius:9,fontSize:12,fontWeight:600,border:`1.5px solid ${T.indigoL}`,background:"transparent",color:T.indigo,cursor:"pointer"}}>{copied?"✓ Copied!":"Copy"}</button>
+                  <button style={{background:T.g1,color:T.white,padding:"6px 14px",borderRadius:9,fontSize:12,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 3px 14px rgba(99,102,241,0.3)"}}>Download</button>
+                </div>}
+              </div>
+              {!letter&&!loading&&<div style={{textAlign:"center",padding:"72px 0",color:T.faint}}>
+                <div style={{fontSize:36,marginBottom:10,opacity:.4}}>✦</div>
+                <div style={{fontSize:13}}>Your cover letter will appear here</div>
+              </div>}
+              {(letter||loading)&&<div style={{fontSize:14,color:T.ink,lineHeight:1.9,whiteSpace:"pre-line",background:"rgba(99,102,241,0.02)",padding:18,borderRadius:12,border:"1px solid rgba(99,102,241,0.06)",minHeight:280}}>
+                {letter}{loading&&<span style={{display:"inline-block",width:2,height:16,background:T.indigo,verticalAlign:"text-bottom",animation:"blink 1s step-end infinite"}}/>}
+              </div>}
+            </div>
+          </div>
+        </div>
+      </div>;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // APP ROOT
+    // ══════════════════════════════════════════════════════
+    function App() {
+      const [page,setPage]=useState("home");
+      const pages={home:<Home setPage={setPage}/>,dashboard:<Dashboard setPage={setPage}/>,jobs:<Jobs/>,resume:<Resume/>,ats:<ATS/>,cover:<Cover/>};
+      return <div style={{display:"flex",height:"100vh",overflow:"hidden",fontFamily:"'Inter','Segoe UI',system-ui,sans-serif"}}>
+        <style>{`
+          @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+          @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+          @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+          * {box-sizing:border-box;margin:0;padding:0;}
+          ::-webkit-scrollbar{width:4px}
+          ::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.25);border-radius:2px}
+        `}</style>
+        <Sidebar page={page} setPage={setPage}/>
+        {pages[page]}
+      </div>;
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+  <script>
+    window.addEventListener('load', () => {
+      try {
+        const code = document.getElementById('careerlens-code').textContent;
+        const transpiled = Babel.transform(code, {
+          presets: [
+            ['react', { runtime: 'classic' }],
+            ['env', { modules: false }]
+          ]
+        }).code;
+        
+        const script = document.createElement('script');
+        script.textContent = transpiled;
+        document.body.appendChild(script);
+        console.log("CareerLens Transpilation successful!");
+      } catch (err) {
+        console.error("CareerLens Transpilation error:", err);
+      }
+    });
+  </script>
+</body>
+</html>

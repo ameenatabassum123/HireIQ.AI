@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cover Letter AI - HireIQ.AI</title>
+  <!-- Load React 18 & ReactDOM -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Load Babel Standalone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #EEF0F8;
+      overflow: hidden;
+      height: 100vh;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .animate-blink { animation: blink 1s step-end infinite; }
+    select:focus, input:focus {
+      outline: none;
+      border-color: #8B5CF6 !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    window.CURRENT_USER_NAME = "{{ current_user.name or current_user.email }}";
+    window.JOBS = {{ (jobs or []) | tojson }};
+    window.PROFILES = {{ (profiles or []) | tojson }};
+    window.SELECTED_JOB_ID = "{{ selected_job_id or '' }}";
+    window.ACTIVE_SLUG = "{{ active_slug or '' }}";
+    window.INITIAL_LETTER_TEXT = {{ (letter_text or '') | tojson }};
+    window.INITIAL_PDF_PATH = "{{ pdf_path or '' }}";
+    window.MESSAGE = "{{ message or '' }}";
+    window.ERROR = "{{ error or '' }}";
+  </script>
+
+  <script type="text/plain" id="react-code">
+    {% raw %}
+    const { useState, useEffect } = React;
+
+    const T = {
+      sidebar: "#0A0F1E", sidebarText: "rgba(255,255,255,0.5)", sidebarBorder: "rgba(255,255,255,0.07)",
+      bg: "#EEF0F8", ink: "#0F172A", muted: "#64748B", faint: "#94A3B8", white: "#fff",
+      indigo: "#6366F1", indigoL: "#EEF2FF", violet: "#8B5CF6",
+      cyan: "#06B6D4", emerald: "#10B981", amber: "#F59E0B", rose: "#F43F5E",
+      g1: "linear-gradient(135deg,#6366F1,#8B5CF6)",
+      g2: "linear-gradient(135deg,#06B6D4,#6366F1)",
+      g3: "linear-gradient(135deg,#10B981,#06B6D4)",
+      g4: "linear-gradient(135deg,#F43F5E,#F59E0B)",
+      g5: "linear-gradient(135deg,#8B5CF6,#F43F5E)",
+    };
+
+    const glass = (ex={}) => ({ background:"rgba(255,255,255,0.75)", border:"1px solid rgba(255,255,255,0.6)", backdropFilter:"blur(18px)", WebkitBackdropFilter:"blur(18px)", borderRadius:18, ...ex });
+
+    // ── NAV ITEMS
+    const NAV = [
+      {id:"home", label:"Home", icon:"⚡", href:"/home"},
+      {id:"dashboard", label:"Dashboard", icon:"▦", href:"/dashboard"},
+      {id:"jobs", label:"Jobs", icon:"◎", href:"/jobs"},
+      {id:"resume", label:"Resume Tailor", icon:"◷", href:"/resume-review"},
+      {id:"ats", label:"ATS Score", icon:"◉", href:"/ats"},
+      {id:"cover", label:"Cover Letter", icon:"✦", href:"/cover-letter"},
+      {id:"about", label:"About", icon:"ℹ", href:"/about"},
+    ];
+
+    // ── SIDEBAR
+    function Sidebar({ activeId }) {
+      return <div style={{width:228,flexShrink:0,background:"linear-gradient(180deg,#0A0F1E,#0C1226)",borderRight:`1px solid ${T.sidebarBorder}`,display:"flex",flexDirection:"column",padding:"24px 14px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:T.indigo,opacity:.07,filter:"blur(50px)",bottom:-30,left:-30,pointerEvents:"none"}}/>
+        {/* Logo */}
+        <div style={{padding:"2px 10px 24px",borderBottom:`1px solid ${T.sidebarBorder}`,marginBottom:18}}>
+          <div style={{fontFamily:"'Segoe UI',sans-serif",fontSize:19,fontWeight:800,color:T.white,letterSpacing:"-0.5px"}}>
+            HireIQ<span style={{background:T.g1,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>.AI</span>
+          </div>
+          <div style={{fontSize:8,color:T.sidebarText,marginTop:4,letterSpacing:"0.2px",lineHeight:1.3}}>From Resume to Offer ---- Your Personal AI Carrer Copilot</div>
+        </div>
+        {/* Nav */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
+          {NAV.map(n=>{
+            const a=activeId===n.id;
+            return <div key={n.id} onClick={()=>window.location.href=n.href} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:11,background:a?"rgba(99,102,241,0.18)":"transparent",border:a?"1px solid rgba(99,102,241,0.28)":"1px solid transparent",cursor:"pointer",position:"relative",transition:"all 0.18s"}}>
+              {a&&<div style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",width:3,height:18,background:T.g1,borderRadius:"0 3px 3px 0"}}/>}
+              <span style={{fontSize:15,opacity:a?1:.45}}>{n.icon}</span>
+              <span style={{fontSize:13,fontWeight:a?700:400,color:a?T.white:T.sidebarText}}>{n.label}</span>
+            </div>;
+          })}
+        </div>
+        {/* User */}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px",borderRadius:12,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:T.g1,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,color:T.white,flexShrink:0}}>
+            {(window.CURRENT_USER_NAME || "U")[0].toUpperCase()}
+          </div>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:T.white,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{window.CURRENT_USER_NAME || "User"}</div>
+            <div style={{fontSize:10,color:T.sidebarText}}>Pro Plan</div>
+          </div>
+          <form method="post" action="/logout" style={{margin:0,padding:0,display:"flex",alignItems:"center"}}>
+            <button type="submit" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:T.sidebarText,padding:"2px"}} title="Logout">
+              🚪
+            </button>
+          </form>
+        </div>
+      </div>;
+    }
+
+    // ── MAIN APP
+    function App() {
+      const [selectedJobId, setSelectedJobId] = useState(window.SELECTED_JOB_ID);
+      const [selectedProfileSlug, setSelectedProfileSlug] = useState(window.ACTIVE_SLUG);
+      const [candidateName, setCandidateName] = useState(window.CURRENT_USER_NAME.split("@")[0]);
+      const [jobTitle, setJobTitle] = useState("");
+      const [company, setCompany] = useState("");
+      const [tone, setTone] = useState("Professional");
+
+      const [loading, setLoading] = useState(false);
+      const [letter, setLetter] = useState(window.INITIAL_LETTER_TEXT || "");
+      const [pdfPath, setPdfPath] = useState(window.INITIAL_PDF_PATH || "");
+      const [copied, setCopied] = useState(false);
+      const [err, setErr] = useState("");
+
+      const TONES = ["Professional", "Enthusiastic", "Concise", "Creative"];
+
+      // Pre-fill fields on mount
+      useEffect(() => {
+        if (window.SELECTED_JOB_ID) {
+          const matchedJob = window.JOBS.find(j => String(j.id) === String(window.SELECTED_JOB_ID));
+          if (matchedJob) {
+            setJobTitle(matchedJob.title || "");
+            setCompany(matchedJob.company || "");
+          }
+        }
+        if (window.ACTIVE_SLUG) {
+          const matchedProf = window.PROFILES.find(p => p.slug === window.ACTIVE_SLUG);
+          if (matchedProf && matchedProf.name) {
+            setCandidateName(matchedProf.name);
+          }
+        }
+      }, []);
+
+      const handleJobChange = (jobId) => {
+        setSelectedJobId(jobId);
+        const matchedJob = window.JOBS.find(j => String(j.id) === String(jobId));
+        if (matchedJob) {
+          setJobTitle(matchedJob.title || "");
+          setCompany(matchedJob.company || "");
+        } else {
+          setJobTitle("");
+          setCompany("");
+        }
+        setLetter("");
+        setPdfPath("");
+        setErr("");
+      };
+
+      const handleProfileChange = (slug) => {
+        setSelectedProfileSlug(slug);
+        const matchedProf = window.PROFILES.find(p => p.slug === slug);
+        if (matchedProf && matchedProf.name) {
+          setCandidateName(matchedProf.name);
+        }
+        setLetter("");
+        setPdfPath("");
+        setErr("");
+      };
+
+      const generateLetter = () => {
+        if (!selectedJobId) {
+          alert("Please select a job first.");
+          return;
+        }
+        setLoading(true);
+        setLetter("");
+        setPdfPath("");
+        setErr("");
+
+        const body = new FormData();
+        if (selectedProfileSlug) body.append("profile_slug", selectedProfileSlug);
+
+        fetch(`/api/cover-letter/${selectedJobId}`, { method: "POST", body })
+          .then(r => r.json().then(data => ({ ok: r.ok, data })))
+          .then(res => {
+            if (!res.ok) {
+              setErr(res.data.detail || res.data.error || "Failed to generate cover letter.");
+              setLoading(false);
+              return;
+            }
+            setPdfPath(res.data.pdf_path || "");
+
+            // Typewriter effect on real letter
+            const txt = res.data.letter_text || "";
+            let i = 0;
+            const iv = setInterval(() => {
+              setLetter(txt.slice(0, i));
+              i += 4;
+              if (i > txt.length + 4) {
+                clearInterval(iv);
+                setLoading(false);
+              }
+            }, 15);
+          })
+          .catch(() => {
+            setErr("Request failed. Verify that you are logged in and have a parsed resume.");
+            setLoading(false);
+          });
+      };
+
+      const handleCopy = () => {
+        if (!letter) return;
+        navigator.clipboard?.writeText(letter)
+          .then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          })
+          .catch(() => {});
+      };
+
+      const downloadUrl = pdfPath ? "/" + pdfPath.replace(/\\/g, "/") : "";
+
+      return (
+        <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
+          <Sidebar activeId="cover" />
+          <div style={{ flex: 1, overflowY: "auto", background: T.bg, position: "relative" }}>
+            <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
+              <div style={{ position: "absolute", width: 340, height: 340, borderRadius: "50%", background: T.violet, opacity: .07, filter: "blur(55px)", top: "15%", left: "15%" }} />
+              <div style={{ position: "absolute", width: 340, height: 340, borderRadius: "50%", background: T.rose, opacity: .07, filter: "blur(55px)", top: "55%", left: "60%" }} />
+              <div style={{ position: "absolute", width: 340, height: 340, borderRadius: "50%", background: T.indigo, opacity: .07, filter: "blur(55px)", top: "35%", left: "45%" }} />
+            </div>
+            <div style={{ position: "relative", zIndex: 1, padding: "36px 44px" }}>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: T.ink, letterSpacing: "-0.5px", marginBottom: 4 }}>Cover Letter AI</h1>
+              <p style={{ color: T.muted, fontSize: 13, marginBottom: 32 }}>Role-specific, resume-grounded cover letters — not generic templates.</p>
+
+              {err && (
+                <div style={{ padding: "12px 16px", background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.25)", borderRadius: 12, color: T.rose, fontSize: 13, fontWeight: 600, marginBottom: 20 }}>
+                  {err}
+                </div>
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 22 }}>
+                {/* Form */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ ...glass({ padding: "22px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)" }) }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: T.ink, marginBottom: 18 }}>Personalise</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 5 }}>Select Target Job</div>
+                        <select
+                          value={selectedJobId}
+                          onChange={e => handleJobChange(e.target.value)}
+                          style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.9)", color: T.ink }}
+                        >
+                          <option value="">— choose job —</option>
+                          {window.JOBS.map(j => (
+                            <option key={j.id} value={j.id}>[{j.platform || '?'}] {j.title} @ {j.company || '?'}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 5 }}>Resume Profile</div>
+                        <select
+                          value={selectedProfileSlug}
+                          onChange={e => handleProfileChange(e.target.value)}
+                          style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.9)", color: T.ink }}
+                        >
+                          <option value="">Active / default profile</option>
+                          {window.PROFILES.map(p => (
+                            <option key={p.slug} value={p.slug} disabled={!p.has_parsed}>
+                              {p.name || p.slug} {p.active ? "(active)" : ""} {!p.has_parsed ? "— not parsed" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 5 }}>Your Name</div>
+                        <input
+                          value={candidateName}
+                          onChange={e => setCandidateName(e.target.value)}
+                          placeholder="Your Name"
+                          style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.9)", color: T.ink }}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 5 }}>Job Title</div>
+                        <input
+                          value={jobTitle}
+                          readOnly
+                          placeholder="Senior Data Analyst"
+                          style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.05)", color: T.ink, cursor: "not-allowed" }}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 5 }}>Company</div>
+                        <input
+                          value={company}
+                          readOnly
+                          placeholder="Flipkart"
+                          style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.05)", color: T.ink, cursor: "not-allowed" }}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 7 }}>Tone</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {TONES.map(t => (
+                            <button key={t} onClick={() => setTone(t)} style={{ padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer", background: tone === t ? T.indigo : "rgba(99,102,241,0.08)", color: tone === t ? T.white : T.indigo, transition: "all 0.15s" }}>{t}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={generateLetter}
+                    disabled={loading || !selectedJobId}
+                    style={{ background: T.g5, color: T.white, padding: "13px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "none", cursor: (loading || !selectedJobId) ? "default" : "pointer", boxShadow: "0 6px 28px rgba(139,92,246,0.38)" }}
+                  >
+                    {loading ? "Writing..." : "✦ Generate Cover Letter"}
+                  </button>
+                </div>
+
+                {/* Output */}
+                <div style={{ ...glass({ padding: "24px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)", minHeight: 400, display: "flex", flexDirection: "column" }) }}>
+                  <div style={{ display: "flex", justifycontent: "space-between", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexShrink: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: T.ink }}>Generated Letter</div>
+                    {letter && (
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={handleCopy} style={{ padding: "6px 13px", borderRadius: 9, fontSize: 12, fontWeight: 600, border: `1.5px solid ${T.indigoL}`, background: "transparent", color: T.indigo, cursor: "pointer" }}>
+                          {copied ? "✓ Copied!" : "Copy"}
+                        </button>
+                        {downloadUrl && (
+                          <a href={downloadUrl} target="_blank" rel="noopener noreferrer" style={{ background: T.g1, color: T.white, padding: "6px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 3px 14px rgba(99,102,241,0.3)", textDecoration: "none" }}>
+                            Download PDF
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {!letter && !loading && (
+                    <div style={{ textAlign: "center", padding: "72px 0", color: T.faint, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifycontent: "center", justifyContent: "center" }}>
+                      <div style={{ fontSize: 36, marginBottom: 10, opacity: .4 }}>✦</div>
+                      <div style={{ fontSize: 13 }}>Your cover letter will appear here</div>
+                    </div>
+                  )}
+
+                  {loading && !letter && (
+                    <div style={{ textAlign: "center", padding: "72px 0", color: T.muted, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifycontent: "center", justifyContent: "center" }}>
+                      <div style={{ fontSize: 24, marginBottom: 10, animation: "spin 0.8s linear infinite" }}>✦</div>
+                      <div style={{ fontSize: 13 }}>Writing cover letter...</div>
+                    </div>
+                  )}
+
+                  {(letter) && (
+                    <div style={{ fontSize: 14, color: T.ink, lineHeight: 1.9, whiteSpace: "pre-line", background: "rgba(99,102,241,0.02)", padding: 18, borderRadius: 12, border: "1px solid rgba(99,102,241,0.06)", flex: 1, minHeight: 280 }}>
+                      {letter}
+                      {loading && <span style={{ display: "inline-block", width: 2, height: 16, background: T.indigo, verticalAlign: "text-bottom", animation: "blink 1s step-end infinite" }} />}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+    {% endraw %}
+  </script>
+
+  <script>
+    window.addEventListener('load', () => {
+      try {
+        const code = document.getElementById('react-code').textContent;
+        const transpiled = Babel.transform(code, {
+          presets: [
+            ['react', { runtime: 'classic' }],
+            ['env', { modules: false }]
+          ]
+        }).code;
+        
+        const script = document.createElement('script');
+        script.textContent = transpiled;
+        document.body.appendChild(script);
+        console.log("React page compiled successfully!");
+      } catch (err) {
+        console.error("React compilation error:", err);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+# =============================================================================
+# AI Job Application Agent - Main Configuration
+# =============================================================================
+# Tweak the values below to control how the agent searches, filters,
+# and applies to jobs. Secrets (API keys) live in `.env`, not here.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# AI (this project only supports Google Gemini via google-generativeai)
+# -----------------------------------------------------------------------------
+ai:
+  provider: gemini
+  model: gemini-2.0-flash
+  # Resume parsing uses a lighter model (separate free-tier quota bucket).
+  parse_model: gemini-2.0-flash-lite
+  # Used when primary model hits 429 / quota (separate limits in practice).
+  fallback_model: gemini-2.0-flash-lite
+  # Retries per model for rate-limit / quota errors (each waits before retry).
+  max_retries: 6
+  # Web upload+parse: fewer retries so the UI fails fast with a clear message.
+  web_parse_max_retries: 2
+  # Generate human-readable match explanations during analyze (Gemini).
+  explain_matches: true
+
+# -----------------------------------------------------------------------------
+# User info
+# -----------------------------------------------------------------------------
+user:
+  name: "Ameena Tabassum"
+  email: "you@example.com"
+  phone: "+91-0000000000"
+  location: "Bengaluru, India"
+  linkedin: "https://www.linkedin.com/in/your-handle"
+  github: "https://github.com/your-handle"
+  portfolio: "https://your-portfolio.example.com"
+  # Resume PDFs: upload via web app only (Profiles page at /profiles).
+  #   python main.py
+  # Optional default profile slug for matching / apply (see config/profiles/<slug>.json):
+  # active_profile: data_science
+  # resume_path is deprecated — do not set; portal uploads go to resume/<slug>.pdf
+  # resume_path: "resume/master_resume.pdf"
+
+# -----------------------------------------------------------------------------
+# Job search criteria
+# -----------------------------------------------------------------------------
+job_search:
+  roles:
+    - "AI Engineer"
+    - "Machine Learning Engineer"
+    - "Data Scientist"
+    - "Data Analyst"
+    - "Data Analytics"
+    - "Python Developer"
+  locations:
+    - "Remote"
+    - "Bengaluru"
+    - "Hyderabad"
+    - "India"
+  job_types:
+    - "full-time"
+    - "internship"
+    - "contract"
+  min_match_score: 70
+  max_results_per_platform: 50
+  # Cap role x location Apify actor runs per platform (omit or 0 = no cap).
+  apify_max_combos: 4
+  # Automatic background scraping when the web app is running (python main.py)
+  auto_scrape:
+    enabled: true
+    interval_minutes: 2880
+    startup_delay_seconds: 15
+    parallel: true
+    max_workers: 3
+    score_new_jobs: true
+    manual_cooldown_minutes: 5
+    new_badge_minutes: 30
+  # Match-score badge thresholds (web app Jobs page)
+  badge_thresholds:
+    green: 80
+    yellow: 50
+
+# -----------------------------------------------------------------------------
+# Profile enrichment (conversational CLI)
+# -----------------------------------------------------------------------------
+profile_enrichment:
+  enabled: true
+  max_questions: 8
+
+# -----------------------------------------------------------------------------
+# Resume tailoring review (web app)
+# -----------------------------------------------------------------------------
+resume_review:
+  enabled: true
+
+# -----------------------------------------------------------------------------
+# Platforms to scrape
+# -----------------------------------------------------------------------------
+platforms:
+  apify:
+    linkedin: true
+    indeed: true
+    glassdoor: true
+    google_jobs: true
+    naukri: true
+  internshala: true
+  indeed: true
+  naukri: true
+  wellfound: true
+  glassdoor: true
+  google_jobs: true
+  linkedin: true
+
+# -----------------------------------------------------------------------------
+# Filters
+# -----------------------------------------------------------------------------
+filters:
+  exclude_keywords:
+    - "senior"
+    - "5+ years"
+    - "lead"
+    - "principal"
+    - "staff"
+    - "manager"
+  exclude_companies: []
+  required_keywords: []
+
+# -----------------------------------------------------------------------------
+# Web app (python main.py)
+# -----------------------------------------------------------------------------
+web:
+  host: 127.0.0.1
+  port: 8765
+
+# -----------------------------------------------------------------------------
+# Output / runtime
+# -----------------------------------------------------------------------------
+output:
+  resumes_dir: "output/resumes"
+  cover_letters_dir: "output/cover_letters"
+
+automation:
+  auto_apply: false
+  headless: true
+  apply_delay_seconds: 5

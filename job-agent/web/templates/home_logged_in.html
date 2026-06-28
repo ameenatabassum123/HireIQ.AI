@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home - HireIQ.AI</title>
+  <!-- Load React 18 & ReactDOM -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Load Babel Standalone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #EEF0F8;
+      overflow: hidden;
+      height: 100vh;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .animate-blink { animation: blink 1s step-end infinite; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    window.CURRENT_USER_NAME = "{{ current_user.name or current_user.email }}";
+    window.STATS_TOTAL_JOBS = "{{ stats.total_jobs or 0 }}";
+    window.STATS_APPLICATIONS = "{{ stats.applications or 0 }}";
+  </script>
+
+  <script type="text/plain" id="react-code">
+    {% raw %}
+    const { useState, useEffect } = React;
+
+    const T = {
+      sidebar: "#0A0F1E", sidebarText: "rgba(255,255,255,0.5)", sidebarBorder: "rgba(255,255,255,0.07)",
+      bg: "#EEF0F8", ink: "#0F172A", muted: "#64748B", faint: "#94A3B8", white: "#fff",
+      indigo: "#6366F1", indigoL: "#EEF2FF", violet: "#8B5CF6",
+      cyan: "#06B6D4", emerald: "#10B981", amber: "#F59E0B", rose: "#F43F5E",
+      g1: "linear-gradient(135deg,#6366F1,#8B5CF6)",
+      g2: "linear-gradient(135deg,#06B6D4,#6366F1)",
+      g3: "linear-gradient(135deg,#10B981,#06B6D4)",
+      g4: "linear-gradient(135deg,#F43F5E,#F59E0B)",
+      g5: "linear-gradient(135deg,#8B5CF6,#F43F5E)",
+    };
+
+    const glass = (ex={}) => ({ background:"rgba(255,255,255,0.75)", border:"1px solid rgba(255,255,255,0.6)", backdropFilter:"blur(18px)", WebkitBackdropFilter:"blur(18px)", borderRadius:18, ...ex });
+
+    // ── NAV ITEMS
+    const NAV = [
+      {id:"home", label:"Home", icon:"⚡", href:"/home"},
+      {id:"dashboard", label:"Dashboard", icon:"▦", href:"/dashboard"},
+      {id:"jobs", label:"Jobs", icon:"◎", href:"/jobs"},
+      {id:"resume", label:"Resume Tailor", icon:"◷", href:"/resume-review"},
+      {id:"ats", label:"ATS Score", icon:"◉", href:"/ats"},
+      {id:"cover", label:"Cover Letter", icon:"✦", href:"/cover-letter"},
+      {id:"about", label:"About", icon:"ℹ", href:"/about"},
+    ];
+
+    // ── ORBS
+    function Orbs({c=["#6366F1","#8B5CF6","#06B6D4"]}) {
+      return <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none",zIndex:0}}>
+        {c.map((col,i)=><div key={i} style={{position:"absolute",width:280+i*60,height:280+i*60,borderRadius:"50%",background:col,opacity:.07,filter:"blur(55px)",top:`${[15,55,35][i]}%`,left:`${[15,60,45][i]}%`,transform:"translate(-50%,-50%)"}}/>)}
+      </div>;
+    }
+
+    // ── SIDEBAR
+    function Sidebar({ activeId }) {
+      return <div style={{width:228,flexShrink:0,background:"linear-gradient(180deg,#0A0F1E,#0C1226)",borderRight:`1px solid ${T.sidebarBorder}`,display:"flex",flexDirection:"column",padding:"24px 14px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:T.indigo,opacity:.07,filter:"blur(50px)",bottom:-30,left:-30,pointerEvents:"none"}}/>
+        {/* Logo */}
+        <div style={{padding:"2px 10px 24px",borderBottom:`1px solid ${T.sidebarBorder}`,marginBottom:18}}>
+          <div style={{fontFamily:"'Segoe UI',sans-serif",fontSize:19,fontWeight:800,color:T.white,letterSpacing:"-0.5px"}}>
+            HireIQ<span style={{background:T.g1,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>.AI</span>
+          </div>
+          <div style={{fontSize:8,color:T.sidebarText,marginTop:4,letterSpacing:"0.2px",lineHeight:1.3}}>From Resume to Offer ---- Your Personal AI Carrer Copilot</div>
+        </div>
+        {/* Nav */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
+          {NAV.map(n=>{
+            const a=activeId===n.id;
+            return <div key={n.id} onClick={()=>window.location.href=n.href} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:11,background:a?"rgba(99,102,241,0.18)":"transparent",border:a?"1px solid rgba(99,102,241,0.28)":"1px solid transparent",cursor:"pointer",position:"relative",transition:"all 0.18s"}}>
+              {a&&<div style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",width:3,height:18,background:T.g1,borderRadius:"0 3px 3px 0"}}/>}
+              <span style={{fontSize:15,opacity:a?1:.45}}>{n.icon}</span>
+              <span style={{fontSize:13,fontWeight:a?700:400,color:a?T.white:T.sidebarText}}>{n.label}</span>
+            </div>;
+          })}
+        </div>
+        {/* User */}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px",borderRadius:12,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:T.g1,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,color:T.white,flexShrink:0}}>
+            {(window.CURRENT_USER_NAME || "U")[0].toUpperCase()}
+          </div>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:T.white,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{window.CURRENT_USER_NAME || "User"}</div>
+            <div style={{fontSize:10,color:T.sidebarText}}>Pro Plan</div>
+          </div>
+          <form method="post" action="/logout" style={{margin:0,padding:0,display:"flex",alignItems:"center"}}>
+            <button type="submit" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:T.sidebarText,padding:"2px"}} title="Logout">
+              🚪
+            </button>
+          </form>
+        </div>
+      </div>;
+    }
+
+    // ── MAIN APP
+    function App() {
+      const stats = [
+        { v: window.STATS_TOTAL_JOBS || "2.4M+", l: "Jobs Matched", g: T.g1 },
+        { v: "87%", l: "Avg Match Rate", g: T.g3 },
+        { v: window.STATS_APPLICATIONS || "48K", l: "Applications Sent", g: T.g2 },
+        { v: "93%", l: "ATS Pass Rate", g: T.g4 }
+      ];
+
+      const feats = [
+        { icon: "🤖", t: "AI Job Matching", d: "Scrapes 50+ platforms live and scores every role against your resume in real-time.", g: T.g1, href: "/jobs" },
+        { icon: "📄", t: "Resume Tailor", d: "Rewrites your resume for any specific job in seconds — keyword-optimised and ATS-ready.", g: T.g2, href: "/resume-review" },
+        { icon: "🎯", t: "ATS Score", d: "See exactly how recruiter bots read your resume and fix it before they ghost you.", g: T.g3, href: "/ats" },
+        { icon: "✉️", t: "Cover Letter AI", d: "Role-specific cover letters grounded in your actual experience — not generic templates.", g: T.g5, href: "/cover-letter" }
+      ];
+
+      return (
+        <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
+          <Sidebar activeId="home" />
+          <div style={{ flex: 1, overflowY: "auto", background: T.bg, position: "relative" }}>
+            <Orbs />
+            <div style={{ position: "relative", zIndex: 1, padding: "52px 44px" }}>
+              {/* Hero */}
+              <div style={{ textAlign: "center", marginBottom: 60 }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 14px", borderRadius: 20, ...glass(), fontSize: 11, fontWeight: 700, color: T.indigo, marginBottom: 24, letterSpacing: "0.5px" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.emerald, display: "inline-block" }} />
+                  From Resume to Offer ---- Your Personal AI Carrer Copilot
+                </div>
+                <h1 style={{ fontSize: "clamp(36px,4.5vw,62px)", fontWeight: 800, color: T.ink, lineHeight: 1.05, letterSpacing: "-1.5px", marginBottom: 18, fontFamily: "system-ui,sans-serif" }}>
+                  Land your dream job<br />
+                  <span style={{ background: T.g1, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>10× faster.</span>
+                </h1>
+                <p style={{ fontSize: 16, color: T.muted, maxWidth: 500, margin: "0 auto 32px", lineHeight: 1.75 }}>
+                  HireIQ.AI is your AI agent that searches, scores, tailors, and applies — so you spend time on interviews, not spreadsheets.
+                </p>
+                <div style={{ display: "flex", gap: 12, justifyGontent: "center", justifyContent: "center", flexWrap: "wrap" }}>
+                  <button onClick={() => window.location.href = "/dashboard"} style={{ background: T.g1, color: T.white, padding: "13px 30px", borderRadius: 13, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 8px 28px rgba(99,102,241,0.38)" }}>Open Dashboard →</button>
+                  <button onClick={() => window.location.href = "/jobs"} style={{ padding: "13px 26px", borderRadius: 13, fontSize: 14, fontWeight: 600, color: T.ink, border: "1.5px solid rgba(15,23,42,0.1)", ...glass(), cursor: "pointer" }}>Browse Jobs</button>
+                </div>
+              </div>
+              {/* Stats */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 48 }}>
+                {stats.map((s, i) => (
+                  <div key={i} style={{ ...glass({ padding: "22px 18px", textAlign: "center", boxShadow: "0 8px 28px rgba(99,102,241,0.08)", transition: "transform 0.3s", cursor: "default" }) }}>
+                    <div style={{ fontSize: "clamp(24px, 3vw, 30px)", fontWeight: 800, background: s.g, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.v}</div>
+                    <div style={{ fontSize: 11, color: T.muted, marginTop: 4, fontWeight: 500 }}>{s.l}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Features */}
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: T.ink, marginBottom: 20, letterSpacing: "-0.5px" }}>Everything in one agent</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
+                {feats.map((f, i) => (
+                  <div key={i} onClick={() => window.location.href = f.href} style={{ ...glass({ padding: "26px 22px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)", cursor: "pointer", transition: "transform 0.2s" }) }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 13, background: f.g, display: "flex", alignItems: "center", justifycontent: "center", justifyContent: "center", fontSize: 20, marginBottom: 14, boxShadow: "0 6px 20px rgba(99,102,241,0.28)" }}>{f.icon}</div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: T.ink, marginBottom: 7 }}>{f.t}</div>
+                    <div style={{ fontSize: 13, color: T.muted, lineHeight: 1.7 }}>{f.d}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+    {% endraw %}
+  </script>
+
+  <script>
+    window.addEventListener('load', () => {
+      try {
+        const code = document.getElementById('react-code').textContent;
+        const transpiled = Babel.transform(code, {
+          presets: [
+            ['react', { runtime: 'classic' }],
+            ['env', { modules: false }]
+          ]
+        }).code;
+        
+        const script = document.createElement('script');
+        script.textContent = transpiled;
+        document.body.appendChild(script);
+        console.log("React page compiled successfully!");
+      } catch (err) {
+        console.error("React compilation error:", err);
+      }
+    });
+  </script>
+</body>
+</html>

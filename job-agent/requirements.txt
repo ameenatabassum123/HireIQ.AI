@@ -1,0 +1,37 @@
+# Core deps for the AI Job Application Agent.
+# Pinned with lower bounds so we get bug-fix releases without breaking jumps.
+
+# PDF in
+pdfplumber>=0.11.0,<0.12
+
+# LLM - legacy SDK; still works for gemini-2.0-flash on the free tier.
+# TODO(migration): switch to the newer `google-genai` package when stable.
+google-generativeai>=0.8.0,<1.0
+
+# Config / env
+python-dotenv>=1.0.0,<2.0
+pyyaml>=6.0,<7.0
+
+# Apify job scraping
+apify-client>=3.0.2,<4.0
+
+# Browser automation (pin to a Chromium-compatible major)
+playwright>=1.45,<2.0
+
+# HTTP + HTML scraping
+requests>=2.31,<3.0
+beautifulsoup4>=4.12,<5.0
+fake-useragent>=1.5,<3.0
+
+# PDF out
+reportlab>=4.0,<5.0
+
+# Browser web app (any modern browser)
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.27,<1.0
+python-multipart>=0.0.9,<1.0
+jinja2>=3.1,<4.0
+
+# Web auth (session cookies + password hashing)
+bcrypt>=4.0,<5.0
+itsdangerous>=2.1,<3.0

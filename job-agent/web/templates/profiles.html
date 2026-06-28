@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Resume Library — AIAgent{% endblock %}
+
+{% block content %}
+
+{% if message %}
+
+<div class="alert alert-success">{{ message }}</div>
+
+{% endif %}
+
+{% if error %}
+
+<div class="alert alert-error">{{ error }}</div>
+
+{% endif %}
+
+
+
+<div class="page-layout">
+
+  <aside class="sidebar">
+
+    <div class="card sidebar-card">
+
+      <h2 class="sidebar-title">Upload &amp; parse</h2>
+
+      <p class="muted-small" style="margin-top:0;margin-bottom:0.75rem">
+
+        Resumes are saved securely to your account — not as files on your computer.
+
+      </p>
+
+      <form method="post" action="/profiles" enctype="multipart/form-data" id="upload-form">
+
+        <label for="slug">Profile Name</label>
+
+        <input type="text" id="slug" name="slug" placeholder="e.g. Senior Software Engineer" required
+
+               pattern="[a-zA-Z0-9_-]+" title="Letters, numbers, underscores, hyphens">
+
+
+
+        <label>Resume file</label>
+
+        <div class="upload-zone" id="upload-zone">
+
+          <input type="file" id="resume" name="resume" accept=".pdf,application/pdf" required>
+
+          <div class="upload-icon">☁</div>
+
+          <p>Click or drag resume here</p>
+
+          <p class="hint">PDF up to 10MB</p>
+
+        </div>
+
+        <p class="muted-small" id="file-name"></p>
+
+
+
+        <input type="hidden" name="parse" value="1">
+
+
+
+        <button type="submit" class="btn btn-block">⚡ Start AI Analysis</button>
+
+      </form>
+
+      <p class="muted-small" style="margin-top:0.75rem;margin-bottom:0">
+
+        Uses Google Gemini (flash-lite). If quota is hit, a basic local extract is saved.
+
+      </p>
+
+    </div>
+
+
+
+    <div class="card sidebar-card">
+
+      <div class="resume-list-header">
+
+        <h3>Your Resumes</h3>
+
+        <span class="resume-count-badge">{{ profiles | length }} Saved</span>
+
+      </div>
+
+      {% if profiles %}
+
+      <div class="profile-list" id="profile-list">
+
+        {% for p in profiles %}
+
+        <div class="profile-row {% if p.slug == selected_slug %}selected{% endif %}" data-slug="{{ p.slug }}">
+
+          <div class="profile-row-icon">📄</div>
+
+          <div class="profile-row-main">
+
+            <a href="/profiles?slug={{ p.slug }}" class="profile-link" data-slug="{{ p.slug }}">
+
+              <div class="profile-filename">{{ p.display_name or p.slug }}</div>
+
+              <div class="profile-meta">
+
+                <span class="badge badge-parse-{{ p.parse_status }}">{{ p.parse_status_label }}</span>
+
+                {% if p.active %}<span class="muted-small"> · Active</span>{% endif %}
+
+              </div>
+
+            </a>
+
+          </div>
+
+          {% if p.slug == selected_slug %}
+
+          <span class="profile-check" aria-label="Selected">✓</span>
+
+          {% endif %}
+
+          <div class="profile-row-actions">
+
+            {% if not p.active %}
+
+            <button type="button" class="btn btn-sm btn-secondary btn-activate" data-slug="{{ p.slug }}">Set active</button>
+
+            {% endif %}
+
+            <button type="button" class="btn btn-sm btn-secondary btn-delete" data-slug="{{ p.slug }}">Delete</button>
+
+          </div>
+
+        </div>
+
+        {% endfor %}
+
+      </div>
+
+      {% else %}
+
+      <p class="muted-small">No resumes yet. Upload a PDF above — it will be stored in your account.</p>
+
+      {% endif %}
+
+    </div>
+
+  </aside>
+
+
+
+  <div class="main-panel" id="profile-preview">
+
+    {% include "profiles_preview.html" %}
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+

@@ -1,0 +1,234 @@
+<div class="resume-preview-header">
+
+  <div>
+
+    <h1 style="font-size:1.5rem;margin:0">Resume preview</h1>
+
+    {% if selected_profile %}
+
+    <p class="muted-small" style="color:var(--primary);margin:0.25rem 0 0">
+
+      Reviewing: {{ selected_profile.slug }}.pdf
+
+    </p>
+
+    <span class="badge badge-parse-{{ selected_profile.parse_status }}" id="preview-status-badge">
+
+      {{ selected_profile.parse_status_label }}
+
+    </span>
+
+    {% endif %}
+
+  </div>
+
+  {% if selected_profile %}
+
+  <div class="resume-preview-actions">
+
+    {% if selected_profile.has_pdf %}
+
+    <button type="button" class="btn btn-sm btn-secondary btn-reparse" id="btn-reparse"
+            data-slug="{{ selected_profile.slug }}">↻ Re-parse with AI</button>
+
+    <a href="{{ selected_profile.pdf_url }}" class="btn btn-sm btn-secondary" target="_blank" rel="noopener">↓ Open PDF</a>
+
+    {% endif %}
+
+  </div>
+
+  {% endif %}
+
+</div>
+
+
+
+{% if selected_profile %}
+
+<div class="resume-preview-card" id="preview-card">
+
+  {% if selected_profile.has_pdf %}
+
+  <div class="pdf-preview-wrap" id="pdf-preview-wrap">
+
+    <object data="{{ selected_profile.pdf_url }}#view=FitH" type="application/pdf"
+
+            class="pdf-preview-object" id="pdf-preview-object">
+
+      <iframe src="{{ selected_profile.pdf_url }}#view=FitH" title="Resume PDF preview"
+
+              class="pdf-preview" id="pdf-preview-frame"></iframe>
+
+    </object>
+
+    <p class="muted-small pdf-fallback-hint">
+
+      PDF not showing?
+
+      <a href="{{ selected_profile.pdf_url }}" target="_blank" rel="noopener">Open in a new tab</a>.
+
+    </p>
+
+  </div>
+
+  {% endif %}
+
+
+
+  <div class="resume-name" id="preview-name">{{ selected_profile.display_name }}</div>
+
+  {% if selected_profile.show_contact and (selected_profile.profile.title or selected_profile.profile.headline) %}
+
+  <div class="resume-title">{{ selected_profile.profile.title or selected_profile.profile.headline }}</div>
+
+  {% endif %}
+
+
+
+  {% if selected_profile.show_contact %}
+
+  <div class="resume-contact" id="preview-contact">
+
+    {% if selected_profile.profile.email %}
+
+    <span>✉ {{ selected_profile.profile.email }}</span>
+
+    {% endif %}
+
+    {% if selected_profile.profile.linkedin or selected_profile.profile.portfolio %}
+
+    <span>🔗 {{ selected_profile.profile.linkedin or selected_profile.profile.portfolio }}</span>
+
+    {% endif %}
+
+    {% if selected_profile.profile.location %}
+
+    <span>📍 {{ selected_profile.profile.location }}</span>
+
+    {% endif %}
+
+  </div>
+
+  {% endif %}
+
+
+
+  {% if selected_profile.is_local_fallback %}
+
+  <div class="alert alert-info" id="preview-fallback-note">
+
+    Basic local extract — full AI parse pending. Click Re-parse with AI when Gemini quota resets.
+
+  </div>
+
+  {% elif selected_profile.parse_status == 'pdf_only' %}
+
+  <div class="alert alert-info" id="preview-pending-note">
+
+    PDF uploaded — click Re-parse with AI to extract skills and experience.
+
+  </div>
+
+  {% elif selected_profile.parse_status == 'failed' %}
+
+  <div class="alert alert-error" id="preview-failed-note">
+
+    Last parse did not extract usable data. Try Re-parse with AI.
+
+  </div>
+
+  {% endif %}
+
+
+
+  {% if selected_profile.summary %}
+
+  <div class="resume-section-label">Professional Summary</div>
+
+  <p class="preview-summary" style="color:var(--text-secondary);font-size:0.9rem;line-height:1.7" id="preview-summary">{{ selected_profile.summary }}</p>
+
+  {% endif %}
+
+
+
+  {% if selected_profile.profile.experience %}
+
+  <div class="resume-section-label">Experience</div>
+
+  <div class="experience-timeline" id="preview-experience">
+
+    {% for exp in selected_profile.profile.experience %}
+
+    <div class="exp-item">
+
+      <div class="exp-role">{{ exp.title or exp.role or 'Role' }}</div>
+
+      <div class="exp-company">{{ exp.company or '' }}</div>
+
+      <div class="exp-dates">
+
+        {{ exp.start_date or exp.dates or '' }}
+
+        {% if exp.end_date %} — {{ exp.end_date }}
+
+        {% elif exp.current %} — Present{% endif %}
+
+      </div>
+
+      {% if exp.bullets %}
+
+      <ul class="exp-bullets">
+
+        {% for b in exp.bullets %}
+
+        {% if b %}<li>{{ b }}</li>{% endif %}
+
+        {% endfor %}
+
+      </ul>
+
+      {% elif exp.description %}
+
+      <p class="muted-small">{{ exp.description }}</p>
+
+      {% endif %}
+
+    </div>
+
+    {% endfor %}
+
+  </div>
+
+  {% endif %}
+
+
+
+  {% if selected_profile.skills %}
+
+  <div class="resume-section-label">Skills</div>
+
+  <div class="keyword-list" id="preview-skills">
+
+    {% for s in selected_profile.skills %}
+
+    <span class="pill">{{ s }}</span>
+
+    {% endfor %}
+
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% else %}
+
+<div class="card">
+
+  <p class="muted-small">Select a profile from the list or upload a new resume to see a preview here.</p>
+
+</div>
+
+{% endif %}
+
+

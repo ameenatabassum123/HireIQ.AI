@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About HireIQ.AI - AI Career Copilot</title>
+  <!-- Load React 18 & ReactDOM -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Load Babel Standalone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #EEF0F8;
+      overflow: hidden;
+      height: 100vh;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .animate-blink { animation: blink 1s step-end infinite; }
+    @keyframes botFloat { 0%,100%{ transform: translateY(0px); } 50%{ transform: translateY(-16px); } }
+    @keyframes botBlink { 0%,92%,100%{ transform: scaleY(1); } 95%{ transform: scaleY(0.1); } }
+    @keyframes glowPulse { 0%,100%{ opacity:0.4; } 50%{ opacity:0.75; } }
+    @keyframes antennaPulse { 0%,100%{ box-shadow: 0 0 10px 3px rgba(139,92,246,0.6); } 50%{ box-shadow: 0 0 18px 6px rgba(99,102,241,0.9); } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    window.CURRENT_USER_NAME = "{% if current_user %}{{ current_user.name or current_user.email }}{% else %}{% endif %}";
+  </script>
+
+  <script type="text/plain" id="react-code">
+    {% raw %}
+    const { useState, useEffect, useRef } = React;
+
+    // MotionDiv component for animations
+    function MotionDiv({ children, delay = 0, style = {}, ...rest }) {
+      const [shown, setShown] = useState(false);
+      useEffect(() => {
+        const t = setTimeout(() => setShown(true), delay * 1000 + 16);
+        return () => clearTimeout(t);
+      }, [delay]);
+      return (
+        <div {...rest} style={{
+          opacity: shown ? 1 : 0,
+          transform: shown ? "translateY(0px)" : "translateY(20px)",
+          transition: "opacity 0.6s ease, transform 0.6s ease",
+          ...style,
+        }}>{children}</div>
+      );
+    }
+
+    // Checkmark animation wrapper
+    function SpringIn({ children, show }) {
+      const [mounted, setMounted] = useState(show);
+      const [visible, setVisible] = useState(false);
+      useEffect(() => {
+        if (show) {
+          setMounted(true);
+          requestAnimationFrame(() => setVisible(true));
+        } else {
+          setVisible(false);
+          const t = setTimeout(() => setMounted(false), 200);
+          return () => clearTimeout(t);
+        }
+      }, [show]);
+      if (!mounted) return null;
+      return <span style={{
+        display: "inline-flex",
+        transform: visible ? "scale(1)" : "scale(0)",
+        opacity: visible ? 1 : 0,
+        transition: "transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease",
+      }}>{children}</span>;
+    }
+
+    // Crossfade switcher for dynamic component view
+    function Crossfade({ children, depKey }) {
+      const [display, setDisplay] = useState({ key: depKey, node: children });
+      const [visible, setVisible] = useState(true);
+      const prevKey = useRef(depKey);
+      useEffect(() => {
+        if (prevKey.current !== depKey) {
+          setVisible(false);
+          const t = setTimeout(() => {
+            setDisplay({ key: depKey, node: children });
+            setVisible(true);
+            prevKey.current = depKey;
+          }, 180);
+          return () => clearTimeout(t);
+        } else {
+          setDisplay({ key: depKey, node: children });
+        }
+      }, [depKey, children]);
+      return <div style={{ opacity: visible ? 1 : 0, transition: "opacity 0.18s ease" }}>{display.node}</div>;
+    }
+
+    const T = {
+      sidebar: "#0A0F1E", sidebarText: "rgba(255,255,255,0.5)", sidebarBorder: "rgba(255,255,255,0.07)",
+      bg: "#EEF0F8", ink: "#0F172A", muted: "#64748B", faint: "#94A3B8", white: "#fff",
+      indigo: "#6366F1", indigoL: "#EEF2FF", violet: "#8B5CF6",
+      cyan: "#06B6D4", emerald: "#10B981", amber: "#F59E0B", rose: "#F43F5E",
+      g1: "linear-gradient(135deg,#6366F1,#8B5CF6)",
+      g2: "linear-gradient(135deg,#06B6D4,#6366F1)",
+      g3: "linear-gradient(135deg,#10B981,#06B6D4)",
+      g4: "linear-gradient(135deg,#F43F5E,#F59E0B)",
+      g5: "linear-gradient(135deg,#8B5CF6,#F43F5E)",
+    };
+
+    const glass = (ex={}) => ({ background:"rgba(255,255,255,0.75)", border:"1px solid rgba(255,255,255,0.6)", backdropFilter:"blur(18px)", WebkitBackdropFilter:"blur(18px)", borderRadius:18, ...ex });
+
+    // ── NAV ITEMS
+    const NAV = [
+      {id:"home", label:"Home", icon:"⚡", href:"/home"},
+      {id:"dashboard", label:"Dashboard", icon:"▦", href:"/dashboard"},
+      {id:"jobs", label:"Jobs", icon:"◎", href:"/jobs"},
+      {id:"resume", label:"Resume Tailor", icon:"◷", href:"/resume-review"},
+      {id:"ats", label:"ATS Score", icon:"◉", href:"/ats"},
+      {id:"cover", label:"Cover Letter", icon:"✦", href:"/cover-letter"},
+      {id:"about", label:"About", icon:"ℹ", href:"/about"},
+    ];
+
+    // ── ORBS
+    function Orbs({c=["#6366F1","#8B5CF6","#06B6D4"]}) {
+      return <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none",zIndex:0}}>
+        {c.map((col,i)=><div key={i} style={{position:"absolute",width:280+i*60,height:280+i*60,borderRadius:"50%",background:col,opacity:.07,filter:"blur(55px)",top:`${[15,55,35][i]}%`,left:`${[15,60,45][i]}%`,transform:"translate(-50%,-50%)"}}/>)}
+      </div>;
+    }
+
+    // ── SIDEBAR
+    function Sidebar({ activeId }) {
+      return <div style={{width:228,flexShrink:0,background:"linear-gradient(180deg,#0A0F1E,#0C1226)",borderRight:`1px solid ${T.sidebarBorder}`,display:"flex",flexDirection:"column",padding:"24px 14px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:T.indigo,opacity:.07,filter:"blur(50px)",bottom:-30,left:-30,pointerEvents:"none"}}/>
+        {/* Logo */}
+        <div style={{padding:"2px 10px 24px",borderBottom:`1px solid ${T.sidebarBorder}`,marginBottom:18}}>
+          <div style={{fontFamily:"'Segoe UI',sans-serif",fontSize:19,fontWeight:800,color:T.white,letterSpacing:"-0.5px"}}>
+            HireIQ<span style={{background:T.g1,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>.AI</span>
+          </div>
+          <div style={{fontSize:8,color:T.sidebarText,marginTop:4,letterSpacing:"0.2px",lineHeight:1.3}}>From Resume to Offer ---- Your Personal AI Carrer Copilot</div>
+        </div>
+        {/* Nav */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
+          {NAV.map(n=>{
+            const a=activeId===n.id;
+            return <div key={n.id} onClick={()=>window.location.href=n.href} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:11,background:a?"rgba(99,102,241,0.18)":"transparent",border:a?"1px solid rgba(99,102,241,0.28)":"1px solid transparent",cursor:"pointer",position:"relative",transition:"all 0.18s"}}>
+              {a&&<div style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",width:3,height:18,background:T.g1,borderRadius:"0 3px 3px 0"}}/>}
+              <span style={{fontSize:15,opacity:a?1:.45}}>{n.icon}</span>
+              <span style={{fontSize:13,fontWeight:a?700:400,color:a?T.white:T.sidebarText}}>{n.label}</span>
+            </div>;
+          })}
+        </div>
+        {/* User */}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px",borderRadius:12,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:T.g1,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,color:T.white,flexShrink:0}}>
+            {(window.CURRENT_USER_NAME || "U")[0].toUpperCase()}
+          </div>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:T.white,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{window.CURRENT_USER_NAME || "User"}</div>
+            <div style={{fontSize:10,color:T.sidebarText}}>Pro Plan</div>
+          </div>
+          <form method="post" action="/logout" style={{margin:0,padding:0,display:"flex",alignItems:"center"}}>
+            <button type="submit" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:T.sidebarText,padding:"2px"}} title="Logout">
+              🚪
+            </button>
+          </form>
+        </div>
+      </div>;
+    }
+
+    // ── HEADER NAVBAR
+    function Header() {
+      return (
+        <header style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 44px", borderBottom:"1px solid rgba(15,23,42,0.06)", background:"rgba(255,255,255,0.5)", backdropFilter:"blur(12px)", position:"sticky", top:0, zIndex:100 }}>
+          <div>
+            <div style={{ fontFamily:"'Segoe UI',sans-serif", fontSize:20, fontWeight:800, color:T.ink, letterSpacing:"-0.5px" }}>
+              HireIQ<span style={{ background:T.g1, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>.AI</span>
+            </div>
+            <div style={{ fontSize:8, color:T.muted, marginTop:2, letterSpacing:"0.1px" }}>From Resume to Offer ---- Your Personal AI Carrer Copilot</div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:18 }}>
+            <a href="/" style={{ fontSize:13, fontWeight:600, color:T.ink, textDecoration:"none" }}>Home</a>
+            <a href="/jobs" style={{ fontSize:13, fontWeight:600, color:T.ink, textDecoration:"none" }}>Browse Jobs</a>
+            <a href="/login" style={{ fontSize:13, fontWeight:600, color:T.indigo, textDecoration:"none" }}>Sign In</a>
+            <a href="/signup" style={{ background:T.g1, color:T.white, padding:"8px 16px", borderRadius:10, fontSize:12, fontWeight:700, textDecoration:"none", boxShadow:"0 4px 14px rgba(99,102,241,0.25)" }}>Sign Up</a>
+          </div>
+        </header>
+      );
+    }
+
+    // ── Typewriter hook
+    function useTypewriter(text, speed = 35, startDelay = 500) {
+      const [displayed, setDisplayed] = useState("");
+      const [done, setDone] = useState(false);
+      useEffect(() => {
+        setDisplayed(""); setDone(false);
+        let i = 0; let interval;
+        const to = setTimeout(() => {
+          interval = setInterval(() => {
+            i++;
+            setDisplayed(text.slice(0, i));
+            if (i >= text.length) {
+              clearInterval(interval);
+              setDone(true);
+            }
+          }, speed);
+        }, startDelay);
+        return () => {
+          clearTimeout(to);
+          clearInterval(interval);
+        };
+      }, [text, speed, startDelay]);
+      return { displayed, done };
+    }
+
+    // ── Robot3D Scene
+    function RobotScene() {
+      const headRef = useRef(null);
+      const [tilt, setTilt] = useState({ x: 0, y: 0 });
+      const [gaze, setGaze] = useState({ x: 0, y: 0 });
+
+      useEffect(() => {
+        const onMove = (e) => {
+          const w = window.innerWidth, h = window.innerHeight;
+          setTilt({ x: ((e.clientY / h) - 0.5) * -8, y: ((e.clientX / w) - 0.5) * 14 });
+
+          if (headRef.current) {
+            const r = headRef.current.getBoundingClientRect();
+            const dx = e.clientX - (r.left + r.width / 2);
+            const dy = e.clientY - (r.top + r.height / 2);
+            const dist = Math.min(Math.hypot(dx, dy), 400);
+            const angle = Math.atan2(dy, dx);
+            const pull = (dist / 400) * 6;
+            setGaze({ x: Math.cos(angle) * pull, y: Math.sin(angle) * pull });
+          }
+        };
+        window.addEventListener("mousemove", onMove);
+        return () => window.removeEventListener("mousemove", onMove);
+      }, []);
+
+      return (
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", perspective: 1400, pointerEvents: "none" }}>
+          <div style={{ position: "absolute", width: 440, height: 440, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.25) 0%, rgba(139,92,246,0.1) 45%, transparent 75%)", filter: "blur(10px)", animation: "glowPulse 4s ease-in-out infinite" }} />
+          <div style={{
+            position: "relative", width: 200, height: 250, transformStyle: "preserve-3d",
+            transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+            transition: "transform 0.25s ease-out", animation: "botFloat 5s ease-in-out infinite",
+          }}>
+            <div style={{ position: "absolute", top: -24, left: "50%", transform: "translateX(-50%)", width: 4, height: 26, background: "linear-gradient(180deg,#6366F1,#8B5CF6)", borderRadius: 2 }} />
+            <div style={{ position: "absolute", top: -32, left: "50%", transform: "translateX(-50%)", width: 10, height: 10, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, #C4B5FD, #8B5CF6)", animation: "antennaPulse 2s ease-in-out infinite" }} />
+            <div ref={headRef} style={{
+              position: "absolute", top: 0, left: "50%", width: 112, height: 86, transformStyle: "preserve-3d",
+              transform: `translateX(-50%) rotateY(${gaze.x * 1.8}deg) rotateX(${-gaze.y * 1.8}deg)`,
+              transition: "transform 0.15s ease-out",
+            }}>
+              <div style={{ position: "absolute", inset: 0, borderRadius: 24, background: "linear-gradient(160deg,#EEF2FF 0%,#C7D2FE 55%,#A5B4FC 100%)", border: "1px solid rgba(99,102,241,0.4)", boxShadow: "0 16px 36px rgba(99,102,241,0.3), inset 0 2px 6px rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 82, height: 38, borderRadius: 14, background: "linear-gradient(160deg,#0F172A,#1E1B4B)", display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+                  {[0,1].map(i => (
+                    <div key={i} style={{ width: 16, height: 16, borderRadius: "50%", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                      <div style={{ width: 12, height: 12, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%,#A5F3FC,#06B6D4)", boxShadow: "0 0 8px rgba(6,182,212,0.8)", animation: "botBlink 4s ease-in-out infinite", transform: `translate(${gaze.x}px, ${gaze.y}px)`, transition: "transform 0.12s ease-out" }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ position: "absolute", top: 82, left: "50%", transform: "translateX(-50%)", width: 26, height: 12, background: "linear-gradient(180deg,#A5B4FC,#818CF8)", borderRadius: 4 }} />
+            <div style={{ position: "absolute", top: 92, left: "50%", transform: "translateX(-50%)", width: 138, height: 112, borderRadius: 26, background: "linear-gradient(160deg,#F8FAFC 0%,#E0E7FF 50%,#C7D2FE 100%)", border: "1px solid rgba(99,102,241,0.4)", boxShadow: "0 18px 38px rgba(99,102,241,0.28), inset 0 2px 6px rgba(255,255,255,0.9)" }}>
+              <div style={{ position: "absolute", top: 18, left: "50%", transform: "translateX(-50%)", width: 40, height: 40, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, #C4B5FD, #6366F1 60%, #4338CA)", boxShadow: "0 0 20px 5px rgba(99,102,241,0.55)" }} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function CheckIcon() {
+      return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>;
+    }
+
+    // ── MAIN APP
+    function App() {
+      const isLogged = !!window.CURRENT_USER_NAME;
+      const { displayed, done } = useTypewriter("About HireIQ.AI:\nNext-Gen Job Sourcing.", 30, 400);
+
+      const OPTIONS = [
+        "Autonomous Scrapers",
+        "LLM Match Scorer",
+        "Resume Tailoring",
+        "ATS Optimization",
+        "Playwright Apply Agent",
+        "SQLite Persistence"
+      ];
+
+      const [selected, setSelected] = useState(["Autonomous Scrapers"]);
+
+      const toggle = (opt) => {
+        if (selected.includes(opt)) {
+          if (selected.length > 1) {
+            setSelected(selected.filter(x => x !== opt));
+          }
+        } else {
+          setSelected([...selected, opt]);
+        }
+      };
+
+      const DETAILS = {
+        "Autonomous Scrapers": {
+          title: "Autonomous Scrapers (scrapers/)",
+          module: "scraper_manager.py & BaseScraper",
+          desc: "Independent, modular scraping bots configured for LinkedIn, Indeed, Naukri, Glassdoor, Google Jobs, Internshala, and Wellfound. Supports sequential runs or threaded parallel parsing.",
+          highlight: "Spins worker threads in parallel to scan, download, and standardise job listings into clean SQLite records in real-time."
+        },
+        "LLM Match Scorer": {
+          title: "AI Match Scorer (ai/)",
+          module: "matcher.py & jd_analyzer.py",
+          desc: "Powered by Google Gemini 2.0 Flash, it analyses raw Job Descriptions to extract required skills, tools, and experience level. Calculates score percentages against user resumes.",
+          highlight: "Generates step-by-step match explanations, highlighting skills matches, mismatches, and experience gaps."
+        },
+        "Resume Tailoring": {
+          title: "Resume Customizer (ai/)",
+          module: "resume_customizer.py & resume_parser.py",
+          desc: "Uses LLM prompting to suggest optimizations for your resume to match the target job description. Proposes rewrites for experience bullet points and lists relevant skills to add.",
+          highlight: "Can automatically generate customized PDF resumes and tailored cover letters grounded in your profile."
+        },
+        "ATS Optimization": {
+          title: "ATS Scorer (ai/)",
+          module: "ats_scorer.py & cover_letter.py",
+          desc: "Calculates recruiter-bot readability scores. Rates your resume based on keyword density, structure, spacing, missing skills, and role-specific education requirements.",
+          highlight: "Helps you bypass screening algorithms before human recruiters ever inspect your profile."
+        },
+        "Playwright Apply Agent": {
+          title: "Application Automation (automation/)",
+          module: "apply_agent.py",
+          desc: "Uses Playwright Chromium to automate application workflows. Spawns browser instances to pre-fill application fields with information parsed from your active profile.",
+          highlight: "Runs in headless mode by default with configurable delays and pauses to allow user-approved submissions."
+        },
+        "SQLite Persistence": {
+          title: "SQLite Database Layer (db/)",
+          module: "database.py & SQLite schema",
+          desc: "Maintains records of scraped jobs, parsed resume data, matching scores, search stats, and application histories. Decouples Python scrapers/scouts from web servers.",
+          highlight: "Ensures seamless offline state preservation and feeds data directly into the web dashboard."
+        }
+      };
+
+      return (
+        <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
+          {isLogged && <Sidebar activeId="about" />}
+          <div style={{ flex: 1, overflowY: "auto", background: T.bg, position: "relative" }}>
+            {!isLogged && <Header />}
+            <Orbs />
+
+            <div style={{ position: "relative", zIndex: 1, padding: "52px 44px" }}>
+              {/* Hero Section */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 30, minHeight: 340, marginBottom: 40 }}>
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <MotionDiv delay={0}>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 14px", borderRadius: 20, ...glass(), fontSize: 11, fontWeight: 700, color: T.indigo, marginBottom: 20, letterSpacing: "0.5px" }}>
+                      <span style={{width:6,height:6,borderRadius:"50%",background:T.emerald,display:"inline-block"}}/>
+                      From Resume to Offer ---- Your Personal AI Carrer Copilot
+                    </div>
+                    <h1 style={{ fontSize: "clamp(32px, 4vw, 48px)", fontWeight: 900, color: T.ink, lineHeight: 1.1, letterSpacing: "-1.2px", marginBottom: 20, whiteSpace: "pre-wrap" }}>
+                      {displayed}
+                      {!done && <span className="animate-blink" style={{ display: "inline-block", width: 3, height: "0.9em", background: T.indigo, marginLeft: 3, verticalAlign: "text-bottom" }} />}
+                    </h1>
+                  </MotionDiv>
+                  <MotionDiv delay={0.15}>
+                    <p style={{ fontSize: 15, color: T.muted, lineHeight: 1.7, maxWidth: 520 }}>
+                      HireIQ.AI is a modular Python-driven job search agent. It aggregates job recommendations from 7 different platform scrapers, parses resumes with Google Gemini, scores job alignment, and utilizes browser pre-filling automation to fast-track your applications.
+                    </p>
+                  </MotionDiv>
+                </div>
+
+                <div style={{ position: "relative", minHeight: 320 }}>
+                  <RobotScene />
+                </div>
+              </div>
+
+              {/* Technical Modules Section */}
+              <div id="architecture" style={{ maxWidth: 1000, margin: "0 auto", position: "relative", zIndex: 10, marginBottom: 40 }}>
+                <MotionDiv delay={0.25}>
+                  <div style={{ ...glass({ padding: 30, boxShadow: "0 12px 40px rgba(99,102,241,0.06)" }) }}>
+                    <h2 style={{ fontSize: 20, fontWeight: 800, color: T.ink, letterSpacing: "-0.5px", marginBottom: 6 }}>Interactive Module Explorer</h2>
+                    <p style={{ fontSize: 13, color: T.muted, marginBottom: 20 }}>Select modules to inspect technical architecture, Python paths, and LLM roles.</p>
+                    
+                    {/* Option Pills */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+                      {OPTIONS.map(opt => {
+                        const active = selected.includes(opt);
+                        return (
+                          <button
+                            key={opt}
+                            onClick={() => toggle(opt)}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                              padding: "8px 14px", borderRadius: 30, fontSize: 12, fontWeight: 600,
+                              cursor: "pointer", border: active ? "none" : "1px solid rgba(15,23,42,0.1)",
+                              background: active ? T.g1 : "rgba(255,255,255,0.85)",
+                              color: active ? "#fff" : T.ink,
+                              boxShadow: active ? "0 4px 14px rgba(99,102,241,0.2)" : "none",
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            <SpringIn show={active}><CheckIcon /></SpringIn>
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Details view */}
+                    <Crossfade depKey={selected.join("-")}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        {selected.map(sel => {
+                          const data = DETAILS[sel];
+                          return (
+                            <div key={sel} style={{
+                              background: "rgba(99, 102, 241, 0.03)", 
+                              border: "1px solid rgba(99, 102, 241, 0.08)", 
+                              borderRadius: 14, 
+                              padding: "16px 20px"
+                            }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", marginBottom: 6, gap: 10 }}>
+                                <h3 style={{ fontSize: 15, fontWeight: 700, color: T.ink }}>{data.title}</h3>
+                                <span style={{ fontSize: 10, fontFamily: "monospace", color: T.indigo, fontWeight: 700, background: T.indigoL, padding: "2px 8px", borderRadius: 5 }}>
+                                  {data.module}
+                                </span>
+                              </div>
+                              <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.6, marginBottom: 10 }}>{data.desc}</p>
+                              <div style={{ fontSize: 12, color: T.emerald, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ fontSize: 13 }}>⚡</span> {data.highlight}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </Crossfade>
+                  </div>
+                </MotionDiv>
+              </div>
+
+              {/* CLI Pipeline Commands */}
+              <div id="pipeline" style={{ maxWidth: 1000, margin: "0 auto", position: "relative", zIndex: 10 }}>
+                <MotionDiv delay={0.35}>
+                  <div style={{ ...glass({ padding: 30, boxShadow: "0 12px 40px rgba(99,102,241,0.06)" }) }}>
+                    <h2 style={{ fontSize: 20, fontWeight: 800, color: T.ink, letterSpacing: "-0.5px", marginBottom: 6 }}>Pipeline execution commands</h2>
+                    <p style={{ fontSize: 13, color: T.muted, marginBottom: 20 }}>Core setup and CLI triggers parsed from AGENTS.md instructions.</p>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                      {/* Execution Modes */}
+                      <div style={{ background: "rgba(255,255,255,0.4)", border: "1px solid rgba(15,23,42,0.06)", borderRadius: 14, padding: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: T.ink, marginBottom: 12, borderBottom: "1px solid rgba(15,23,42,0.06)", paddingBottom: 6 }}>Execution Modes</h3>
+                        <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+                          {[
+                            ["Full Pipeline", "python main.py"],
+                            ["Scrape & Index", "python main.py --mode scrape"],
+                            ["Scoring Matches", "python main.py --mode analyze --limit 25"],
+                            ["Form Auto-Apply", "python main.py --mode apply --min-score 70"],
+                            ["Web Portal", "python main.py --mode web"]
+                          ].map(([label, cmd]) => (
+                            <li key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: 12, fontWeight: 500, color: T.muted }}>{label}</span>
+                              <code style={{ background: "#0F172A", color: "#A5B4FC", fontSize: 10, padding: "4px 8px", borderRadius: 6, fontWeight: 600 }}>{cmd}</code>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Setup Dependencies */}
+                      <div style={{ background: "rgba(255,255,255,0.4)", border: "1px solid rgba(15,23,42,0.06)", borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                        <div>
+                          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.ink, marginBottom: 8, borderBottom: "1px solid rgba(15,23,42,0.06)", paddingBottom: 6 }}>Setup Dependencies</h3>
+                          <p style={{ fontSize: 12, color: T.muted, lineHeight: 1.5, marginBottom: 10 }}>
+                            HireIQ.AI relies on Python 3.10+ and Playwright Chromium for web automation workflows:
+                          </p>
+                          <pre style={{ background: "#0F172A", color: "#38BDF8", fontSize: 10, padding: 10, borderRadius: 8, fontFamily: "monospace", overflowX: "auto" }}>
+                            pip install -r requirements.txt<br/>
+                            playwright install chromium
+                          </pre>
+                        </div>
+                        <div style={{ fontSize: 11, color: T.muted, fontStyle: "italic", marginTop: 8 }}>
+                          ℹ️ Run with <code style={{ background: "rgba(99,102,241,0.1)", color: T.indigo, padding: "1px 4px", borderRadius: 3 }}>--parallel</code> on scrape mode for threaded multi-site indexing.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </MotionDiv>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    {% endraw %}
+  </script>
+
+  <!-- Loader compiler script using Babel Standalone manually -->
+  <script>
+    window.addEventListener('load', () => {
+      try {
+        const code = document.getElementById('react-code').textContent;
+        const transpiled = Babel.transform(code, {
+          presets: [
+            ['react', { runtime: 'classic' }],
+            ['env', { modules: false }]
+          ]
+        }).code;
+        
+        const script = document.createElement('script');
+        script.textContent = transpiled;
+        document.body.appendChild(script);
+        console.log("About page compilation successful!");
+      } catch (err) {
+        console.error("About page compilation error:", err);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jobs Directory - HireIQ.AI</title>
+  <!-- Load React 18 & ReactDOM -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Load Babel Standalone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #EEF0F8;
+      overflow: hidden;
+      height: 100vh;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .animate-blink { animation: blink 1s step-end infinite; }
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    select:focus, input:focus {
+      outline: none;
+      border-color: #6366F1 !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    window.CURRENT_USER_NAME = "{{ current_user.name or current_user.email }}";
+    window.INITIAL_JOBS = {{ (jobs or []) | tojson }};
+    window.JOB_COUNT = {{ job_count or 0 }};
+    window.PAGE = {{ page or 1 }};
+    window.TOTAL_PAGES = {{ total_pages or 1 }};
+    window.HAS_PROFILE = {{ 'true' if has_profile else 'false' }};
+    window.SEARCH_QUERY = "{{ search or '' }}";
+    window.SELECTED_LOCATION = "{{ selected_location or '' }}";
+    window.MIN_SCORE = "{{ min_score or '' }}";
+    window.SELECTED_PLATFORM = "{{ selected_platform or '' }}";
+    window.LOCATIONS = {{ (locations or []) | tojson }};
+    window.PLATFORMS = {{ (platforms or []) | tojson }};
+  </script>
+
+  <script type="text/plain" id="react-code">
+    {% raw %}
+    const { useState, useEffect } = React;
+
+    const T = {
+      sidebar: "#0A0F1E", sidebarText: "rgba(255,255,255,0.5)", sidebarBorder: "rgba(255,255,255,0.07)",
+      bg: "#EEF0F8", ink: "#0F172A", muted: "#64748B", faint: "#94A3B8", white: "#fff",
+      indigo: "#6366F1", indigoL: "#EEF2FF", violet: "#8B5CF6",
+      cyan: "#06B6D4", emerald: "#10B981", amber: "#F59E0B", rose: "#F43F5E",
+      g1: "linear-gradient(135deg,#6366F1,#8B5CF6)",
+      g2: "linear-gradient(135deg,#06B6D4,#6366F1)",
+      g3: "linear-gradient(135deg,#10B981,#06B6D4)",
+      g4: "linear-gradient(135deg,#F43F5E,#F59E0B)",
+      g5: "linear-gradient(135deg,#8B5CF6,#F43F5E)",
+    };
+
+    const glass = (ex={}) => ({ background:"rgba(255,255,255,0.75)", border:"1px solid rgba(255,255,255,0.6)", backdropFilter:"blur(18px)", WebkitBackdropFilter:"blur(18px)", borderRadius:18, ...ex });
+    const sc = s => s>=80 ? T.emerald : s>=60 ? T.amber : T.rose;
+
+    // ── NAV ITEMS
+    const NAV = [
+      {id:"home", label:"Home", icon:"⚡", href:"/home"},
+      {id:"dashboard", label:"Dashboard", icon:"▦", href:"/dashboard"},
+      {id:"jobs", label:"Jobs", icon:"◎", href:"/jobs"},
+      {id:"resume", label:"Resume Tailor", icon:"◷", href:"/resume-review"},
+      {id:"ats", label:"ATS Score", icon:"◉", href:"/ats"},
+      {id:"cover", label:"Cover Letter", icon:"✦", href:"/cover-letter"},
+      {id:"about", label:"About", icon:"ℹ", href:"/about"},
+    ];
+
+    // ── SIDEBAR
+    function Sidebar({ activeId }) {
+      return <div style={{width:228,flexShrink:0,background:"linear-gradient(180deg,#0A0F1E,#0C1226)",borderRight:`1px solid ${T.sidebarBorder}`,display:"flex",flexDirection:"column",padding:"24px 14px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:T.indigo,opacity:.07,filter:"blur(50px)",bottom:-30,left:-30,pointerEvents:"none"}}/>
+        {/* Logo */}
+        <div style={{padding:"2px 10px 24px",borderBottom:`1px solid ${T.sidebarBorder}`,marginBottom:18}}>
+          <div style={{fontFamily:"'Segoe UI',sans-serif",fontSize:19,fontWeight:800,color:T.white,letterSpacing:"-0.5px"}}>
+            HireIQ<span style={{background:T.g1,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>.AI</span>
+          </div>
+          <div style={{fontSize:8,color:T.sidebarText,marginTop:4,letterSpacing:"0.2px",lineHeight:1.3}}>From Resume to Offer ---- Your Personal AI Carrer Copilot</div>
+        </div>
+        {/* Nav */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
+          {NAV.map(n=>{
+            const a=activeId===n.id;
+            return <div key={n.id} onClick={()=>window.location.href=n.href} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:11,background:a?"rgba(99,102,241,0.18)":"transparent",border:a?"1px solid rgba(99,102,241,0.28)":"1px solid transparent",cursor:"pointer",position:"relative",transition:"all 0.18s"}}>
+              {a&&<div style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",width:3,height:18,background:T.g1,borderRadius:"0 3px 3px 0"}}/>}
+              <span style={{fontSize:15,opacity:a?1:.45}}>{n.icon}</span>
+              <span style={{fontSize:13,fontWeight:a?700:400,color:a?T.white:T.sidebarText}}>{n.label}</span>
+            </div>;
+          })}
+        </div>
+        {/* User */}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px",borderRadius:12,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:T.g1,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,color:T.white,flexShrink:0}}>
+            {(window.CURRENT_USER_NAME || "U")[0].toUpperCase()}
+          </div>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:T.white,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{window.CURRENT_USER_NAME || "User"}</div>
+            <div style={{fontSize:10,color:T.sidebarText}}>Pro Plan</div>
+          </div>
+          <form method="post" action="/logout" style={{margin:0,padding:0,display:"flex",alignItems:"center"}}>
+            <button type="submit" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:T.sidebarText,padding:"2px"}} title="Logout">
+              🚪
+            </button>
+          </form>
+        </div>
+      </div>;
+    }
+
+    // ── MAIN APP
+    function App() {
+      const [q, setQ] = useState(window.SEARCH_QUERY);
+      const [loading, setLoading] = useState(false);
+      const [jobs, setJobs] = useState(window.INITIAL_JOBS);
+      const [sel, setSel] = useState(window.INITIAL_JOBS[0] || null);
+      const [totalCount, setTotalCount] = useState(window.JOB_COUNT);
+      const [page, setPage] = useState(window.PAGE);
+      const [totalPages, setTotalPages] = useState(window.TOTAL_PAGES);
+
+      // Filters
+      const [location, setLocation] = useState(window.SELECTED_LOCATION);
+      const [platform, setPlatform] = useState(window.SELECTED_PLATFORM);
+      const [minScore, setMinScore] = useState(window.MIN_SCORE);
+
+      const fetchJobs = (targetPage = 1) => {
+        setLoading(true);
+        const params = new URLSearchParams();
+        if (q.trim()) params.append("search", q);
+        if (location) params.append("location", location);
+        if (platform) params.append("platform", platform);
+        if (minScore) params.append("min_score", minScore);
+        params.append("page", targetPage);
+
+        fetch(`/api/jobs?${params.toString()}`)
+          .then(r => r.json())
+          .then(data => {
+            setJobs(data.jobs || []);
+            setTotalCount(data.total || 0);
+            setPage(data.page || 1);
+            setTotalPages(data.total_pages || 1);
+            setSel(data.jobs[0] || null);
+            setLoading(false);
+          })
+          .catch(() => {
+            setLoading(false);
+          });
+      };
+
+      const handleSearch = () => {
+        fetchJobs(1);
+      };
+
+      // Helper to generate context-aware tags matching the mockup style
+      const getTags = (j) => {
+        const t = [];
+        if (j.platform) t.push(j.platform);
+        if (j.job_type) t.push(j.job_type);
+        const title = (j.title || "").toLowerCase();
+        if (title.includes("data") || title.includes("analyst")) {
+          t.push("Python", "SQL");
+        } else if (title.includes("ml") || title.includes("machine") || title.includes("science")) {
+          t.push("ML", "Python");
+        } else if (title.includes("dev") || title.includes("software") || title.includes("engineer")) {
+          t.push("Git", "API");
+        } else {
+          t.push("AI Agent", "Fit");
+        }
+        return t.slice(0, 3);
+      };
+
+      return (
+        <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
+          <Sidebar activeId="jobs" />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", background: T.bg, overflow: "hidden" }}>
+            {/* Search and Filters Bar */}
+            <div style={{ padding: "18px 28px", borderBottom: "1px solid rgba(15,23,42,0.07)", background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 10, flex: 1, minWidth: 280 }}>
+                <input
+                  value={q}
+                  onChange={e => setQ(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSearch()}
+                  placeholder="Search roles — e.g. Data Analyst, Product Manager…"
+                  style={{ flex: 1, padding: "12px 16px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 12, fontSize: 13, fontFamily: "inherit", color: T.ink, background: "rgba(255,255,255,0.9)" }}
+                />
+                <button onClick={handleSearch} style={{ background: T.g1, color: T.white, padding: "12px 24px", borderRadius: 12, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 4px 18px rgba(99,102,241,0.32)", whiteSpace: "nowrap" }}>
+                  {loading ? "Searching..." : "Search"}
+                </button>
+              </div>
+
+              {/* Filters dropdowns */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <select
+                  value={location}
+                  onChange={e => { setLocation(e.target.value); setTimeout(() => fetchJobs(1), 50); }}
+                  style={{ padding: "10px 14px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 11, fontSize: 12, background: "#fff", color: T.ink, cursor: "pointer" }}
+                >
+                  <option value="">All Locations</option>
+                  {window.LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                </select>
+
+                <select
+                  value={platform}
+                  onChange={e => { setPlatform(e.target.value); setTimeout(() => fetchJobs(1), 50); }}
+                  style={{ padding: "10px 14px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 11, fontSize: 12, background: "#fff", color: T.ink, cursor: "pointer" }}
+                >
+                  <option value="">All Platforms</option>
+                  {window.PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+
+                <select
+                  value={minScore}
+                  onChange={e => { setMinScore(e.target.value); setTimeout(() => fetchJobs(1), 50); }}
+                  style={{ padding: "10px 14px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 11, fontSize: 12, background: "#fff", color: T.ink, cursor: "pointer" }}
+                >
+                  <option value="">Any Match Score</option>
+                  <option value="90">Elite (90%+)</option>
+                  <option value="80">Excellent (80%+)</option>
+                  <option value="70">Good (70%+)</option>
+                  <option value="50">Fair (50%+)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+              {/* List */}
+              <div style={{ width: 330, borderRight: "1px solid rgba(15,23,42,0.06)", overflowY: "auto", padding: "14px", display: "flex", flexDirection: "column", gap: 10 }}>
+                {loading ? (
+                  [1, 2, 3, 4].map(i => (
+                    <div key={i} style={{ height: 96, borderRadius: 14, background: "linear-gradient(90deg,#e2e8f0 25%,#eef0f8 50%,#e2e8f0 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite" }} />
+                  ))
+                ) : jobs.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "40px 0", color: T.faint, fontSize: 13 }}>No recommendations found matching filters.</div>
+                ) : (
+                  jobs.map(j => {
+                    const score = j.match_score || 50;
+                    return (
+                      <div key={j.id} onClick={() => setSel(j)} style={{ ...glass({ padding: "14px", cursor: "pointer", border: sel?.id === j.id ? "1.5px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.6)", background: sel?.id === j.id ? "rgba(99,102,241,0.07)" : "rgba(255,255,255,0.75)", transition: "all 0.18s" }) }}>
+                        <div style={{ display: "flex", justifycontent: "space-between", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{j.title}</div>
+                            <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{j.company || "Unknown"} · {j.location || "Remote"}</div>
+                            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                              {getTags(j).map(t => (
+                                <span key={t} style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 20, background: T.indigoL, color: T.indigo }}>{t}</span>
+                              ))}
+                            </div>
+                          </div>
+                          {window.HAS_PROFILE && (
+                            <div style={{ marginLeft: 10, textAlign: "center", flexShrink: 0 }}>
+                              <div style={{ fontSize: 17, fontWeight: 900, color: sc(score) }}>{score}%</div>
+                              <div style={{ fontSize: 8, color: T.faint, fontWeight: 600 }}>MATCH</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div style={{ display: "flex", justifycontent: "space-between", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: 10, borderTop: "1px solid rgba(15,23,42,0.05)" }}>
+                    <button
+                      disabled={page <= 1}
+                      onClick={() => fetchJobs(page - 1)}
+                      style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.1)", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: page <= 1 ? "default" : "pointer", opacity: page <= 1 ? 0.5 : 1 }}
+                    >
+                      ← Prev
+                    </button>
+                    <span style={{ fontSize: 11, color: T.muted }}>Page {page} of {totalPages}</span>
+                    <button
+                      disabled={page >= totalPages}
+                      onClick={() => fetchJobs(page + 1)}
+                      style={{ background: "#fff", border: "1px solid rgba(15,23,42,0.1)", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: page >= totalPages ? "default" : "pointer", opacity: page >= totalPages ? 0.5 : 1 }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Detail */}
+              {sel ? (
+                <div style={{ flex: 1, overflowY: "auto", padding: "28px 32px" }}>
+                  <div style={{ maxWidth: 640 }}>
+                    <div style={{ display: "flex", justifycontent: "space-between", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                      <div>
+                        <h2 style={{ fontSize: 24, fontWeight: 800, color: T.ink, letterSpacing: "-0.5px" }}>{sel.title}</h2>
+                        <div style={{ fontSize: 13, color: T.muted, marginTop: 4 }}>
+                          {sel.company || "Unknown Company"} · {sel.location || "Remote"} · {sel.job_type || "Full-time"}
+                        </div>
+                      </div>
+                      {window.HAS_PROFILE && (
+                        <div style={{ width: 82, height: 82, borderRadius: "50%", background: T.g1, display: "flex", flexDirection: "column", alignItems: "center", justifycontent: "center", justifyContent: "center", boxShadow: "0 10px 36px rgba(99,102,241,0.42)", flexShrink: 0, border: "3px solid rgba(255,255,255,0.4)" }}>
+                          <div style={{ fontSize: 20, fontWeight: 900, color: T.white }}>{sel.match_score || 50}%</div>
+                          <div style={{ fontSize: 8, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>MATCH</div>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+                      {getTags(sel).map(t => (
+                        <span key={t} style={{ fontSize: 12, fontWeight: 600, padding: "5px 13px", borderRadius: 20, background: T.indigoL, color: T.indigo }}>{t}</span>
+                      ))}
+                      <span style={{ fontSize: 12, fontWeight: 600, padding: "5px 13px", borderRadius: 20, background: "#F0FDF4", color: T.emerald }}>₹18–24 LPA</span>
+                    </div>
+                    <p style={{ fontSize: 14, color: T.muted, lineHeight: 1.8, marginBottom: 28, whiteSpace: "pre-line" }}>
+                      {sel.description || "No description provided."}
+                    </p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 12 }}>
+                      <button onClick={() => window.location.href = `/ats?job_id=${sel.id}`} style={{ padding: "12px 8px", borderRadius: 12, fontSize: 12, fontWeight: 700, border: "1.5px solid rgba(15,23,42,0.09)", background: "rgba(255,255,255,0.9)", color: T.ink, cursor: "pointer", backdropFilter: "blur(8px)" }}>◉ ATS Score</button>
+                      <button onClick={() => window.location.href = `/resume-review?job_id=${sel.id}`} style={{ padding: "12px 8px", borderRadius: 12, fontSize: 12, fontWeight: 700, border: "1.5px solid rgba(15,23,42,0.09)", background: "rgba(255,255,255,0.9)", color: T.ink, cursor: "pointer", backdropFilter: "blur(8px)" }}>◷ Tailor Resume</button>
+                      <button onClick={() => window.location.href = `/cover-letter?job_id=${sel.id}`} style={{ padding: "12px 8px", borderRadius: 12, fontSize: 12, fontWeight: 700, border: "1.5px solid rgba(15,23,42,0.09)", background: "rgba(255,255,255,0.9)", color: T.ink, cursor: "pointer", backdropFilter: "blur(8px)" }}>✦ Cover Letter</button>
+                    </div>
+                    <button onClick={() => window.open(sel.url, "_blank")} style={{ width: "100%", background: T.g1, color: T.white, padding: "14px", borderRadius: 13, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 6px 28px rgba(99,102,241,0.36)" }}>
+                      Apply on {sel.platform || "Platform"} →
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifycontent: "center", justifyContent: "center", color: T.faint, fontSize: 14 }}>
+                  Select a job from the list to view details.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+    {% endraw %}
+  </script>
+
+  <script>
+    window.addEventListener('load', () => {
+      try {
+        const code = document.getElementById('react-code').textContent;
+        const transpiled = Babel.transform(code, {
+          presets: [
+            ['react', { runtime: 'classic' }],
+            ['env', { modules: false }]
+          ]
+        }).code;
+        
+        const script = document.createElement('script');
+        script.textContent = transpiled;
+        document.body.appendChild(script);
+        console.log("React page compiled successfully!");
+      } catch (err) {
+        console.error("React compilation error:", err);
+      }
+    });
+  </script>
+</body>
+</html>

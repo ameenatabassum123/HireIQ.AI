@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATS Score - HireIQ.AI</title>
+  <!-- Load React 18 & ReactDOM -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Load Babel Standalone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #EEF0F8;
+      overflow: hidden;
+      height: 100vh;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .animate-blink { animation: blink 1s step-end infinite; }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    select:focus, textarea:focus {
+      outline: none;
+      border-color: #6366F1 !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    window.CURRENT_USER_NAME = "{{ current_user.name or current_user.email }}";
+    window.JOBS = {{ (jobs or []) | tojson }};
+    window.PROFILES = {{ (profiles or []) | tojson }};
+    window.SELECTED_JOB_ID = "{{ selected_job_id or '' }}";
+    window.SELECTED_PROFILE_SLUG = "{{ selected_profile_slug or '' }}";
+    window.ATS_RESULT = {{ (ats_result or {}) | tojson }};
+    window.ATS_ERROR = "{{ ats_error or '' }}";
+    window.ATS_REPORT = "{{ ats_report or '' }}";
+    window.HAS_PROFILE = {{ 'true' if has_profile else 'false' }};
+  </script>
+
+  <script type="text/plain" id="react-code">
+    {% raw %}
+    const { useState, useEffect } = React;
+
+    const T = {
+      sidebar: "#0A0F1E", sidebarText: "rgba(255,255,255,0.5)", sidebarBorder: "rgba(255,255,255,0.07)",
+      bg: "#EEF0F8", ink: "#0F172A", muted: "#64748B", faint: "#94A3B8", white: "#fff",
+      indigo: "#6366F1", indigoL: "#EEF2FF", violet: "#8B5CF6",
+      cyan: "#06B6D4", emerald: "#10B981", amber: "#F59E0B", rose: "#F43F5E",
+      g1: "linear-gradient(135deg,#6366F1,#8B5CF6)",
+      g2: "linear-gradient(135deg,#06B6D4,#6366F1)",
+      g3: "linear-gradient(135deg,#10B981,#06B6D4)",
+      g4: "linear-gradient(135deg,#F43F5E,#F59E0B)",
+      g5: "linear-gradient(135deg,#8B5CF6,#F43F5E)",
+    };
+
+    const glass = (ex={}) => ({ background:"rgba(255,255,255,0.75)", border:"1px solid rgba(255,255,255,0.6)", backdropFilter:"blur(18px)", WebkitBackdropFilter:"blur(18px)", borderRadius:18, ...ex });
+    const sc = s => s>=80 ? T.emerald : s>=60 ? T.amber : T.rose;
+
+    // ── NAV ITEMS
+    const NAV = [
+      {id:"home", label:"Home", icon:"⚡", href:"/home"},
+      {id:"dashboard", label:"Dashboard", icon:"▦", href:"/dashboard"},
+      {id:"jobs", label:"Jobs", icon:"◎", href:"/jobs"},
+      {id:"resume", label:"Resume Tailor", icon:"◷", href:"/resume-review"},
+      {id:"ats", label:"ATS Score", icon:"◉", href:"/ats"},
+      {id:"cover", label:"Cover Letter", icon:"✦", href:"/cover-letter"},
+      {id:"about", label:"About", icon:"ℹ", href:"/about"},
+    ];
+
+    // ── SIDEBAR
+    function Sidebar({ activeId }) {
+      return <div style={{width:228,flexShrink:0,background:"linear-gradient(180deg,#0A0F1E,#0C1226)",borderRight:`1px solid ${T.sidebarBorder}`,display:"flex",flexDirection:"column",padding:"24px 14px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:T.indigo,opacity:.07,filter:"blur(50px)",bottom:-30,left:-30,pointerEvents:"none"}}/>
+        {/* Logo */}
+        <div style={{padding:"2px 10px 24px",borderBottom:`1px solid ${T.sidebarBorder}`,marginBottom:18}}>
+          <div style={{fontFamily:"'Segoe UI',sans-serif",fontSize:19,fontWeight:800,color:T.white,letterSpacing:"-0.5px"}}>
+            HireIQ<span style={{background:T.g1,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>.AI</span>
+          </div>
+          <div style={{fontSize:8,color:T.sidebarText,marginTop:4,letterSpacing:"0.2px",lineHeight:1.3}}>From Resume to Offer ---- Your Personal AI Carrer Copilot</div>
+        </div>
+        {/* Nav */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
+          {NAV.map(n=>{
+            const a=activeId===n.id;
+            return <div key={n.id} onClick={()=>window.location.href=n.href} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:11,background:a?"rgba(99,102,241,0.18)":"transparent",border:a?"1px solid rgba(99,102,241,0.28)":"1px solid transparent",cursor:"pointer",position:"relative",transition:"all 0.18s"}}>
+              {a&&<div style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",width:3,height:18,background:T.g1,borderRadius:"0 3px 3px 0"}}/>}
+              <span style={{fontSize:15,opacity:a?1:.45}}>{n.icon}</span>
+              <span style={{fontSize:13,fontWeight:a?700:400,color:a?T.white:T.sidebarText}}>{n.label}</span>
+            </div>;
+          })}
+        </div>
+        {/* User */}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px",borderRadius:12,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:T.g1,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,color:T.white,flexShrink:0}}>
+            {(window.CURRENT_USER_NAME || "U")[0].toUpperCase()}
+          </div>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:T.white,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{window.CURRENT_USER_NAME || "User"}</div>
+            <div style={{fontSize:10,color:T.sidebarText}}>Pro Plan</div>
+          </div>
+          <form method="post" action="/logout" style={{margin:0,padding:0,display:"flex",alignItems:"center"}}>
+            <button type="submit" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:T.sidebarText,padding:"2px"}} title="Logout">
+              🚪
+            </button>
+          </form>
+        </div>
+      </div>;
+    }
+
+    // ── MAIN APP
+    function App() {
+      const [selectedJobId, setSelectedJobId] = useState(window.SELECTED_JOB_ID);
+      const [selectedProfileSlug, setSelectedProfileSlug] = useState(window.SELECTED_PROFILE_SLUG || window.ACTIVE_SLUG);
+      const [jdText, setJdText] = useState("");
+      const [loading, setLoading] = useState(false);
+      const [result, setResult] = useState(null);
+      const [anim, setAnim] = useState(false);
+      const [err, setErr] = useState(window.ATS_ERROR);
+
+      // Pre-fill JD text and run if initial result is available
+      useEffect(() => {
+        if (window.SELECTED_JOB_ID) {
+          const matchedJob = window.JOBS.find(j => String(j.id) === String(window.SELECTED_JOB_ID));
+          if (matchedJob) {
+            setJdText(matchedJob.description || "");
+          }
+        }
+        if (window.ATS_RESULT && Object.keys(window.ATS_RESULT).length > 0) {
+          setResult(window.ATS_RESULT);
+          setTimeout(() => setAnim(true), 100);
+        }
+      }, []);
+
+      // Update JD text when job is selected
+      const handleJobChange = (jobId) => {
+        setSelectedJobId(jobId);
+        const matchedJob = window.JOBS.find(j => String(j.id) === String(jobId));
+        if (matchedJob) {
+          setJdText(matchedJob.description || "");
+        } else {
+          setJdText("");
+        }
+        setResult(null);
+        setAnim(false);
+        setErr("");
+      };
+
+      const runATS = () => {
+        if (!selectedJobId) {
+          alert("Please select a job first.");
+          return;
+        }
+        setLoading(true);
+        setResult(null);
+        setAnim(false);
+        setErr("");
+
+        const body = new FormData();
+        if (selectedProfileSlug) body.append("profile_slug", selectedProfileSlug);
+
+        fetch(`/api/ats/${selectedJobId}`, { method: "POST", body })
+          .then(r => r.json().then(data => ({ ok: r.ok, data })))
+          .then(res => {
+            setLoading(false);
+            if (!res.ok) {
+              setErr(res.data.detail || res.data.error || "Could not compute ATS score.");
+              return;
+            }
+            setResult(res.data);
+            setTimeout(() => setAnim(true), 80);
+          })
+          .catch(() => {
+            setLoading(false);
+            setErr("Request failed. Please verify that you have a parsed resume.");
+          });
+      };
+
+      const overall = result?.ats_score || 0;
+      const cats = result?.weighted_sections || [];
+      const present = result?.matched_keywords || [];
+      const missing = result?.missing_keywords || [];
+
+      return (
+        <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
+          <Sidebar activeId="ats" />
+          <div style={{ flex: 1, overflowY: "auto", background: T.bg, position: "relative" }}>
+            <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
+              <div style={{ position: "absolute", width: 340, height: 340, borderRadius: "50%", background: T.emerald, opacity: .07, filter: "blur(55px)", top: "15%", left: "15%" }} />
+              <div style={{ position: "absolute", width: 340, height: 340, borderRadius: "50%", background: T.indigo, opacity: .07, filter: "blur(55px)", top: "55%", left: "60%" }} />
+              <div style={{ position: "absolute", width: 340, height: 340, borderRadius: "50%", background: T.amber, opacity: .07, filter: "blur(55px)", top: "35%", left: "45%" }} />
+            </div>
+            <div style={{ position: "relative", zIndex: 1, padding: "36px 44px" }}>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: T.ink, letterSpacing: "-0.5px", marginBottom: 4 }}>ATS Score Checker</h1>
+              <p style={{ color: T.muted, fontSize: 13, marginBottom: 32 }}>See exactly how recruiter bots read your resume — fix it before they ghost you.</p>
+
+              {err && (
+                <div style={{ padding: "12px 16px", background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.25)", borderRadius: 12, color: T.rose, fontSize: 13, fontWeight: 600, marginBottom: 20 }}>
+                  {err}
+                </div>
+              )}
+
+              {!result && !loading && (
+                <div style={{ maxWidth: 520, ...glass({ padding: "28px", boxShadow: "0 8px 32px rgba(99,102,241,0.09)" }) }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 5 }}>Job Title</label>
+                      <select
+                        value={selectedJobId}
+                        onChange={e => handleJobChange(e.target.value)}
+                        style={{ width: "100%", padding: "10px 12px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.9)", color: T.ink }}
+                      >
+                        <option value="">— choose job —</option>
+                        {window.JOBS.map(j => (
+                          <option key={j.id} value={j.id}>[{j.platform || '?'}] {j.title} @ {j.company || '?'}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 5 }}>Resume Profile</label>
+                      <select
+                        value={selectedProfileSlug}
+                        onChange={e => setSelectedProfileSlug(e.target.value)}
+                        style={{ width: "100%", padding: "10px 12px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 10, fontSize: 13, background: "rgba(255,255,255,0.9)", color: T.ink }}
+                      >
+                        <option value="">Active / default profile</option>
+                        {window.PROFILES.map(p => (
+                          <option key={p.slug} value={p.slug} disabled={!p.has_parsed}>
+                            {p.name || p.slug} {p.active ? "(active)" : ""} {!p.has_parsed ? "— not parsed" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.muted, marginBottom: 5 }}>Job Description Preview</label>
+                    <textarea
+                      value={jdText}
+                      readOnly
+                      placeholder="Select a job above to load the job description..."
+                      style={{ width: "100%", height: 150, padding: "11px 13px", border: "1.5px solid rgba(15,23,42,0.1)", borderRadius: 11, fontSize: 13, fontFamily: "inherit", color: T.ink, resize: "none", background: "rgba(255,255,255,0.9)" }}
+                    />
+                  </div>
+
+                  <button
+                    onClick={runATS}
+                    disabled={!window.HAS_PROFILE}
+                    style={{ width: "100%", background: T.g3, color: T.white, padding: "13px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "none", cursor: !window.HAS_PROFILE ? "default" : "pointer", boxShadow: "0 4px 22px rgba(16,185,129,0.34)" }}
+                  >
+                    ◉ Run ATS Analysis
+                  </button>
+                  
+                  {!window.HAS_PROFILE && (
+                    <p style={{ marginTop: 12, color: T.muted, fontSize: 12, textAlign: "center" }}>
+                      <a href="/profiles" style={{ color: T.indigo, fontWeight: 600, textDecoration: "none" }}>Upload and parse a resume</a> before running analysis.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {loading && (
+                <div style={{ textAlign: "center", padding: "80px 0" }}>
+                  <div style={{ fontSize: 44, color: T.emerald, marginBottom: 14, display: "inline-block", animation: "spin 1.1s linear infinite" }}>◉</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: T.ink, marginBottom: 4 }}>Scanning your resume…</div>
+                  <div style={{ fontSize: 13, color: T.muted }}>Comparing keywords, structure, and alignment</div>
+                </div>
+              )}
+
+              {result && (
+                <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 22 }}>
+                  {/* Score orb */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ ...glass({ padding: "28px 20px", textAlign: "center", boxShadow: "0 12px 40px rgba(16,185,129,0.18)" }) }}>
+                      <div style={{ position: "relative", width: 110, height: 110, margin: "0 auto 16px" }}>
+                        <svg viewBox="0 0 110 110" style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}>
+                          <circle cx="55" cy="55" r="46" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="9" />
+                          <circle cx="55" cy="55" r="46" fill="none" stroke={T.emerald} strokeWidth="9"
+                            strokeDasharray={`${anim ? overall / 100 * 289 : 0} 289`} strokeLinecap="round" transform="rotate(-90 55 55)"
+                            style={{ transition: "stroke-dasharray 1.4s cubic-bezier(.17,.67,.35,1.2)" }} />
+                        </svg>
+                        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifycontent: "center", justifyContent: "center" }}>
+                          <div style={{ fontSize: 26, fontWeight: 900, color: T.emerald }}>{overall}</div>
+                          <div style={{ fontSize: 9, color: T.muted, fontWeight: 600 }}>/100</div>
+                        </div>
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: T.ink }}>ATS Score</div>
+                      <div style={{ fontSize: 12, color: T.emerald, fontWeight: 600, marginTop: 3 }}>
+                        {result.recommendation || "Likely to Pass ✓"}
+                      </div>
+                    </div>
+                    <button onClick={() => { setResult(null); setAnim(false); }} style={{ padding: "11px", borderRadius: 12, fontSize: 13, fontWeight: 600, border: "1.5px solid rgba(15,23,42,0.1)", background: "rgba(255,255,255,0.85)", color: T.ink, cursor: "pointer" }}>← Check Another</button>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ ...glass({ padding: "22px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)" }) }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: T.ink, marginBottom: 16 }}>Score Breakdown</div>
+                      {cats.map((c, i) => (
+                        <div key={i} style={{ marginBottom: 14 }}>
+                          <div style={{ display: "flex", justifycontent: "space-between", justifyContent: "space-between", marginBottom: 5 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>{(c.section || "").replace(/_/g, " ")}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: sc(c.percent) }}>{c.percent}%</span>
+                          </div>
+                          <div style={{ height: 5, borderRadius: 3, background: "rgba(0,0,0,0.06)", overflow: "hidden", marginBottom: 3 }}>
+                            <div style={{ height: "100%", width: anim ? `${c.percent}%` : "0%", background: sc(c.percent), borderRadius: 3, transition: "width 1.2s cubic-bezier(.17,.67,.35,1.2)" }} />
+                          </div>
+                          <div style={{ fontSize: 10, color: T.faint }}>Matched {c.matched} of {c.total} items</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                      <div style={{ ...glass({ padding: "18px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)" }) }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.emerald, marginBottom: 10 }}>✓ Found in Resume</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                          {present.length === 0 ? <span style={{ fontSize: 11, color: T.muted }}>None</span> : present.map(k => <span key={k} style={{ fontSize: 10, fontWeight: 600, padding: "2px 9px", borderRadius: 20, background: "#F0FDF4", color: T.emerald }}>{k}</span>)}
+                        </div>
+                      </div>
+                      <div style={{ ...glass({ padding: "18px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)" }) }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.rose, marginBottom: 10 }}>✕ Missing Keywords</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                          {missing.length === 0 ? <span style={{ fontSize: 11, color: T.muted }}>None</span> : missing.map(k => <span key={k} style={{ fontSize: 10, fontWeight: 600, padding: "2px 9px", borderRadius: 20, background: "#FFF1F2", color: T.rose }}>{k}</span>)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+    {% endraw %}
+  </script>
+
+  <script>
+    window.addEventListener('load', () => {
+      try {
+        const code = document.getElementById('react-code').textContent;
+        const transpiled = Babel.transform(code, {
+          presets: [
+            ['react', { runtime: 'classic' }],
+            ['env', { modules: false }]
+          ]
+        }).code;
+        
+        const script = document.createElement('script');
+        script.textContent = transpiled;
+        document.body.appendChild(script);
+        console.log("React page compiled successfully!");
+      } catch (err) {
+        console.error("React compilation error:", err);
+      }
+    });
+  </script>
+</body>
+</html>

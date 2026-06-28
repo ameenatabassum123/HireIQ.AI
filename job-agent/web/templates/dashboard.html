@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - HireIQ.AI</title>
+  <!-- Load React 18 & ReactDOM -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Load Babel Standalone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #EEF0F8;
+      overflow: hidden;
+      height: 100vh;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .animate-blink { animation: blink 1s step-end infinite; }
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    window.CURRENT_USER_NAME = "{{ current_user.name or current_user.email }}";
+    window.DASHBOARD_STATS = {{ (stats or {}) | tojson }};
+    window.RECENT_MATCHES = {{ (recent_matches or []) | tojson }};
+    window.SCRAPE_STATUS = {{ (scrape_status or {}) | tojson }};
+    window.ACTIVE_SLUG = "{{ active_slug or '' }}";
+    window.PROFILE_NAME = "{{ profile_name or '' }}";
+    window.HAS_SKILLS = {{ 'true' if has_skills else 'false' }};
+  </script>
+
+  <script type="text/plain" id="react-code">
+    {% raw %}
+    const { useState, useEffect } = React;
+
+    const T = {
+      sidebar: "#0A0F1E", sidebarText: "rgba(255,255,255,0.5)", sidebarBorder: "rgba(255,255,255,0.07)",
+      bg: "#EEF0F8", ink: "#0F172A", muted: "#64748B", faint: "#94A3B8", white: "#fff",
+      indigo: "#6366F1", indigoL: "#EEF2FF", violet: "#8B5CF6",
+      cyan: "#06B6D4", emerald: "#10B981", amber: "#F59E0B", rose: "#F43F5E",
+      g1: "linear-gradient(135deg,#6366F1,#8B5CF6)",
+      g2: "linear-gradient(135deg,#06B6D4,#6366F1)",
+      g3: "linear-gradient(135deg,#10B981,#06B6D4)",
+      g4: "linear-gradient(135deg,#F43F5E,#F59E0B)",
+      g5: "linear-gradient(135deg,#8B5CF6,#F43F5E)",
+    };
+
+    const glass = (ex={}) => ({ background:"rgba(255,255,255,0.75)", border:"1px solid rgba(255,255,255,0.6)", backdropFilter:"blur(18px)", WebkitBackdropFilter:"blur(18px)", borderRadius:18, ...ex });
+    const sc = s => s>=80 ? T.emerald : s>=60 ? T.amber : T.rose;
+
+    // ── NAV ITEMS
+    const NAV = [
+      {id:"home", label:"Home", icon:"⚡", href:"/home"},
+      {id:"dashboard", label:"Dashboard", icon:"▦", href:"/dashboard"},
+      {id:"jobs", label:"Jobs", icon:"◎", href:"/jobs"},
+      {id:"resume", label:"Resume Tailor", icon:"◷", href:"/resume-review"},
+      {id:"ats", label:"ATS Score", icon:"◉", href:"/ats"},
+      {id:"cover", label:"Cover Letter", icon:"✦", href:"/cover-letter"},
+      {id:"about", label:"About", icon:"ℹ", href:"/about"},
+    ];
+
+    // ── ORBS
+    function Orbs({c=["#6366F1","#8B5CF6","#06B6D4"]}) {
+      return <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none",zIndex:0}}>
+        {c.map((col,i)=><div key={i} style={{position:"absolute",width:280+i*60,height:280+i*60,borderRadius:"50%",background:col,opacity:.07,filter:"blur(55px)",top:`${[15,55,35][i]}%`,left:`${[15,60,45][i]}%`,transform:"translate(-50%,-50%)"}}/>)}
+      </div>;
+    }
+
+    // ── SIDEBAR
+    function Sidebar({ activeId }) {
+      return <div style={{width:228,flexShrink:0,background:"linear-gradient(180deg,#0A0F1E,#0C1226)",borderRight:`1px solid ${T.sidebarBorder}`,display:"flex",flexDirection:"column",padding:"24px 14px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:T.indigo,opacity:.07,filter:"blur(50px)",bottom:-30,left:-30,pointerEvents:"none"}}/>
+        {/* Logo */}
+        <div style={{padding:"2px 10px 24px",borderBottom:`1px solid ${T.sidebarBorder}`,marginBottom:18}}>
+          <div style={{fontFamily:"'Segoe UI',sans-serif",fontSize:19,fontWeight:800,color:T.white,letterSpacing:"-0.5px"}}>
+            HireIQ<span style={{background:T.g1,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>.AI</span>
+          </div>
+          <div style={{fontSize:8,color:T.sidebarText,marginTop:4,letterSpacing:"0.2px",lineHeight:1.3}}>From Resume to Offer ---- Your Personal AI Carrer Copilot</div>
+        </div>
+        {/* Nav */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
+          {NAV.map(n=>{
+            const a=activeId===n.id;
+            return <div key={n.id} onClick={()=>window.location.href=n.href} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:11,background:a?"rgba(99,102,241,0.18)":"transparent",border:a?"1px solid rgba(99,102,241,0.28)":"1px solid transparent",cursor:"pointer",position:"relative",transition:"all 0.18s"}}>
+              {a&&<div style={{position:"absolute",left:0,top:"50%",transform:"translateY(-50%)",width:3,height:18,background:T.g1,borderRadius:"0 3px 3px 0"}}/>}
+              <span style={{fontSize:15,opacity:a?1:.45}}>{n.icon}</span>
+              <span style={{fontSize:13,fontWeight:a?700:400,color:a?T.white:T.sidebarText}}>{n.label}</span>
+            </div>;
+          })}
+        </div>
+        {/* User */}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px",borderRadius:12,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:T.g1,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,color:T.white,flexShrink:0}}>
+            {(window.CURRENT_USER_NAME || "U")[0].toUpperCase()}
+          </div>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:T.white,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{window.CURRENT_USER_NAME || "User"}</div>
+            <div style={{fontSize:10,color:T.sidebarText}}>Pro Plan</div>
+          </div>
+          <form method="post" action="/logout" style={{margin:0,padding:0,display:"flex",alignItems:"center"}}>
+            <button type="submit" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:T.sidebarText,padding:"2px"}} title="Logout">
+              🚪
+            </button>
+          </form>
+        </div>
+      </div>;
+    }
+
+    // ── MAIN APP
+    function App() {
+      const [anim, setAnim] = useState(false);
+      const [scrapeStatus, setScrapeStatus] = useState(window.SCRAPE_STATUS || {});
+      const [scraping, setScraping] = useState(!!scrapeStatus.is_running);
+
+      useEffect(() => {
+        setTimeout(() => setAnim(true), 200);
+
+        // Scraper status polling
+        const interval = setInterval(() => {
+          fetch("/api/scrape/status")
+            .then(r => r.json())
+            .then(s => {
+              setScrapeStatus(s);
+              setScraping(!!s.is_running);
+            })
+            .catch(() => {});
+        }, 15000);
+        return () => clearInterval(interval);
+      }, []);
+
+      const triggerScrape = () => {
+        if (scraping) return;
+        setScraping(true);
+        fetch("/api/scrape/trigger", { method: "POST" })
+          .then(r => r.json())
+          .then(res => {
+            if (res.error || res.detail) {
+              alert(res.error || res.detail || "Refresh failed.");
+              setScraping(false);
+            }
+          })
+          .catch(() => {
+            alert("Refresh request failed.");
+            setScraping(false);
+          });
+      };
+
+      // Real KPI mapping
+      const kpis = [
+        {
+          v: window.DASHBOARD_STATS.total_jobs || "0",
+          l: "Jobs Scraped",
+          s: scraping ? "Scraping now..." : (scrapeStatus.minutes_since_last_scrape != null ? `${scrapeStatus.minutes_since_last_scrape}m ago` : "Live"),
+          g: T.g1
+        },
+        {
+          v: window.DASHBOARD_STATS.match_accuracy ? `${window.DASHBOARD_STATS.match_accuracy}%` : "0%",
+          l: "Avg Match Rate",
+          s: "AI Precision Active",
+          g: T.g3
+        },
+        {
+          v: window.DASHBOARD_STATS.interviews || "0",
+          l: "Applied / Tracking",
+          s: `${window.DASHBOARD_STATS.interviews} total applications`,
+          g: T.g2
+        },
+        {
+          v: window.DASHBOARD_STATS.high_priority || "0",
+          l: "High Priority Matches",
+          s: "Score > 75%",
+          g: T.g4
+        }
+      ];
+
+      const acts = [
+        { l: "Search Jobs", p: "/jobs", g: T.g1 },
+        { l: "Tailor Resume", p: "/resume-review", g: T.g2 },
+        { l: "Check ATS", p: "/ats", g: T.g3 },
+        { l: "Cover Letter", p: "/cover-letter", g: T.g5 }
+      ];
+
+      const getTag = (score) => {
+        if (score >= 90) return "Applied";
+        if (score >= 80) return "Saved";
+        if (score >= 70) return "Tailored";
+        return "Viewed";
+      };
+
+      const tcolor = { Applied: T.indigo, Saved: T.emerald, Tailored: T.amber, Viewed: T.faint };
+      const tbg = { Applied: T.indigoL, Saved: "#F0FDF4", Tailored: "#FFFBEB", Viewed: "#F8FAFC" };
+
+      return (
+        <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
+          <Sidebar activeId="dashboard" />
+          <div style={{ flex: 1, overflowY: "auto", background: T.bg, position: "relative" }}>
+            <Orbs c={["#6366F1", "#06B6D4", "#10B981"]} />
+            <div style={{ position: "relative", zIndex: 1, padding: "36px 44px" }}>
+              <div style={{ marginBottom: 28, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h1 style={{ fontSize: 26, fontWeight: 800, color: T.ink, letterSpacing: "-0.5px" }}>Good morning, {window.CURRENT_USER_NAME.split("@")[0]} 👋</h1>
+                  <p style={{ color: T.muted, fontSize: 13, marginTop: 4 }}>
+                    {scraping ? "AI Agent is currently searching for new job openings..." : "AI Agent successfully loaded latest job recommendations."}
+                  </p>
+                </div>
+                <button
+                  onClick={triggerScrape}
+                  disabled={scraping}
+                  style={{
+                    background: scraping ? T.faint : T.g1,
+                    color: T.white,
+                    padding: "10px 20px",
+                    borderRadius: 11,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: "none",
+                    cursor: scraping ? "default" : "pointer",
+                    boxShadow: scraping ? "none" : "0 4px 14px rgba(99,102,241,0.25)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8
+                  }}
+                >
+                  {scraping && <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />}
+                  {scraping ? "Scraping..." : "Refresh jobs now"}
+                </button>
+              </div>
+              {/* KPIs */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 24 }}>
+                {kpis.map((k, i) => (
+                  <div key={i} style={{ ...glass({ padding: "20px 18px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)" }) }}>
+                    <div style={{ display: "flex", justifycontent: "space-between", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 10, background: k.g, display: "flex", alignItems: "center", justifycontent: "center", justifyContent: "center", color: T.white, fontSize: 14 }}>◈</div>
+                      <span style={{ fontSize: 9, color: T.faint, fontWeight: 600, letterSpacing: "0.5px" }}>LIVE</span>
+                    </div>
+                    <div style={{ fontSize: 28, fontWeight: 800, color: T.ink }}>{k.v}</div>
+                    <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{k.l}</div>
+                    <div style={{ fontSize: 10, color: T.faint, marginTop: 3 }}>{k.s}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 18 }}>
+                {/* Recent */}
+                <div style={{ ...glass({ padding: "22px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)" }) }}>
+                  <div style={{ display: "flex", justifycontent: "space-between", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: T.ink }}>Recent Matches</div>
+                    <span onClick={() => window.location.href = "/jobs"} style={{ fontSize: 12, color: T.indigo, cursor: "pointer", fontWeight: 600 }}>See all →</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {window.RECENT_MATCHES.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: "40px 0", color: T.faint, fontSize: 13 }}>
+                        No matches found. Run a refresh to scrape jobs!
+                      </div>
+                    ) : (
+                      window.RECENT_MATCHES.slice(0, 4).map((j, i) => {
+                        const score = j.match_score || 50;
+                        const tag = getTag(score);
+                        return (
+                          <div key={i} onClick={() => window.location.href = `/jobs/${j.id}`} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: 12, background: "rgba(99,102,241,0.03)", border: "1px solid rgba(99,102,241,0.06)", cursor: "pointer", transition: "background 0.2s" }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 10, background: T.g1, opacity: 0.18 + i * 0.06, display: "flex", alignItems: "center", justifycontent: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, color: T.indigo, flexShrink: 0 }}>
+                              {(j.company || "?")[0].toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{j.title}</div>
+                              <div style={{ fontSize: 11, color: T.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{j.company || "Unknown"}</div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 72 }}>
+                                <div style={{ fontSize: 10, color: T.muted, textAlign: "right", marginBottom: 3 }}>{score}%</div>
+                                <div style={{ height: 4, borderRadius: 2, background: "rgba(0,0,0,0.06)", overflow: "hidden" }}>
+                                  <div style={{ height: "100%", width: anim ? `${score}%` : "0%", background: sc(score), borderRadius: 2, transition: "width 1.2s cubic-bezier(.17,.67,.35,1.2)" }} />
+                                </div>
+                              </div>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: tbg[tag], color: tcolor[tag] }}>{tag}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+                {/* Right col */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ ...glass({ padding: "20px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)" }) }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: T.ink, marginBottom: 14 }}>Quick Actions</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {acts.map((a, i) => (
+                        <button key={i} onClick={() => window.location.href = a.p} style={{ background: a.g, color: T.white, padding: "13px 8px", borderRadius: 12, fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 4px 14px rgba(99,102,241,0.25)", transition: "transform 0.2s" }}>{a.l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ ...glass({ padding: "18px", boxShadow: "0 6px 24px rgba(99,102,241,0.07)" }) }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: T.ink, marginBottom: 12 }}>Profile Strength</div>
+                    {[
+                      ["Resume uploaded", window.HAS_SKILLS],
+                      ["Skills tagged", window.HAS_SKILLS],
+                      ["Location set", !!window.ACTIVE_SLUG],
+                      ["Portfolio link", false]
+                    ].map(([l, done], i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8 }}>
+                        <div style={{ width: 17, height: 17, borderRadius: "50%", background: done ? T.emerald : "rgba(0,0,0,0.07)", display: "flex", alignItems: "center", justifycontent: "center", justifyContent: "center", fontSize: 9, color: T.white, flexShrink: 0 }}>{done ? "✓" : ""}</div>
+                        <span style={{ fontSize: 12, color: done ? T.ink : T.faint }}>{l}</span>
+                      </div>
+                    ))}
+                    <div style={{ marginTop: 10, height: 5, borderRadius: 3, background: "rgba(0,0,0,0.06)" }}>
+                      <div style={{ width: window.HAS_SKILLS ? (window.ACTIVE_SLUG ? "75%" : "50%") : "0%", height: "100%", background: T.g3, borderRadius: 3 }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: T.muted, marginTop: 5 }}>
+                      {window.HAS_SKILLS ? (window.ACTIVE_SLUG ? "75%" : "50%") : "0%"} complete
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+    {% endraw %}
+  </script>
+
+  <script>
+    window.addEventListener('load', () => {
+      try {
+        const code = document.getElementById('react-code').textContent;
+        const transpiled = Babel.transform(code, {
+          presets: [
+            ['react', { runtime: 'classic' }],
+            ['env', { modules: false }]
+          ]
+        }).code;
+        
+        const script = document.createElement('script');
+        script.textContent = transpiled;
+        document.body.appendChild(script);
+        console.log("React page compiled successfully!");
+      } catch (err) {
+        console.error("React compilation error:", err);
+      }
+    });
+  </script>
+</body>
+</html>

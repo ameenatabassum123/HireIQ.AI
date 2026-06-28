@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} — AIAgent{% endblock %}
+{% block content %}
+<a href="/jobs" class="back-link">&larr; Back to jobs</a>
+
+<div class="page-header">
+  <div>
+    <h1>{{ job.title }}</h1>
+    <p class="lead">{{ job.company or 'Unknown company' }}{% if job.location %} · {{ job.location }}{% endif %}</p>
+  </div>
+  {% if job.url %}
+  <a href="{{ job.url }}" class="btn" target="_blank" rel="noopener">Apply on {{ job.platform or 'site' }}</a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="meta-grid">
+    <div>
+      <div class="meta-label">Match / ATS score</div>
+      <div class="meta-value">
+        {% if ats_result %}
+          {% if ats_result.ats_score >= 70 %}
+            <span class="badge badge-score-high">{{ ats_result.ats_score }}% MATCH</span>
+          {% elif ats_result.ats_score >= 50 %}
+            <span class="badge badge-score-mid">{{ ats_result.ats_score }}% MATCH</span>
+          {% else %}
+            <span class="badge badge-score-low">{{ ats_result.ats_score }}% MATCH</span>
+          {% endif %}
+          <span class="muted-small">{{ ats_result.recommendation }}</span>
+        {% elif job.match_score is not none %}
+          <span class="badge badge-match-high">{{ job.match_score }}% MATCH</span>
+        {% else %}
+          <span class="badge badge-score-none">Not scored</span>
+        {% endif %}
+      </div>
+    </div>
+    <div>
+      <div class="meta-label">Platform</div>
+      <div class="meta-value"><span class="badge badge-platform">{{ job.platform or 'unknown' }}</span></div>
+    </div>
+    <div>
+      <div class="meta-label">Type</div>
+      <div class="meta-value">{{ job.job_type or '—' }}</div>
+    </div>
+    <div>
+      <div class="meta-label">Status</div>
+      <div class="meta-value">{{ job.status or 'new' }}</div>
+    </div>
+    <div>
+      <div class="meta-label">Scraped</div>
+      <div class="meta-value">{{ (job.date_scraped or '')[:10] }}</div>
+    </div>
+  </div>
+
+  {% if not has_profile %}
+  <div class="alert alert-info">
+    <a href="/profiles">Upload and parse a resume</a> to see ATS scores and keyword matching.
+  </div>
+  {% endif %}
+
+  {% if explanation %}
+  <h2>Match explanation</h2>
+  <p style="color:var(--text-secondary)">{{ explanation }}</p>
+  {% endif %}
+
+  {% if ats_result %}
+  <h2 id="ats">ATS keyword analysis</h2>
+  <div class="keyword-list">
+    {% for kw in ats_result.matched_keywords %}
+    <span class="keyword-tag keyword-matched" title="Found on your resume">{{ kw }}</span>
+    {% endfor %}
+    {% for kw in ats_result.missing_keywords %}
+    <span class="keyword-tag keyword-missing" title="Missing — consider tailoring">{{ kw }}</span>
+    {% endfor %}
+  </div>
+  {% if ats_result.tailoring_suggestions %}
+  <p class="muted-small" style="margin-top:0.75rem">
+    Priority gaps: {{ ats_result.tailoring_suggestions | join(', ') }}
+  </p>
+  {% endif %}
+  {% elif matched_skills or missing_skills %}
+  <h2>Skill match</h2>
+  {% if matched_skills %}
+  <h3>Matched</h3>
+  <div class="keyword-list">
+    {% for s in matched_skills %}
+    <span class="keyword-tag keyword-matched">{{ s }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if missing_skills %}
+  <h3>Missing</h3>
+  <div class="keyword-list">
+    {% for s in missing_skills %}
+    <span class="keyword-tag keyword-missing">{{ s }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if jd_analysis %}
+  <h2>JD analysis</h2>
+  <div class="meta-grid">
+    {% if jd_analysis.required_skills %}
+    <div>
+      <div class="meta-label">Required skills</div>
+      <div class="meta-value">
+        <div class="keyword-list">
+          {% for s in jd_analysis.required_skills %}
+          <span class="pill">{{ s }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% if jd_analysis.experience_required %}
+    <div>
+      <div class="meta-label">Experience</div>
+      <div class="meta-value">{{ jd_analysis.experience_required }}</div>
+    </div>
+    {% endif %}
+    {% if jd_analysis.seniority_level %}
+    <div>
+      <div class="meta-label">Seniority</div>
+      <div class="meta-value">{{ jd_analysis.seniority_level }}</div>
+    </div>
+    {% endif %}
+  </div>
+  {% elif job.description %}
+  <div class="alert alert-info">
+    JD not analyzed yet.
+    <a href="/jobs/{{ job.id }}?analyze=1" class="btn btn-sm btn-secondary">Analyze description</a>
+    or use the <a href="/ats?job_id={{ job.id }}">ATS calculator</a>.
+  </div>
+  {% endif %}
+
+  <h2>Description</h2>
+  <div class="description-box">{{ job.description or 'No description stored.' }}</div>
+
+  <div class="tool-links">
+    <a href="/ats?job_id={{ job.id }}" class="btn">ATS calculator</a>
+    <a href="/resume-review?job_id={{ job.id }}" class="btn btn-secondary">Tailor resume</a>
+    <a href="/cover-letter?job_id={{ job.id }}" class="btn btn-secondary">Cover letter</a>
+  </div>
+</div>
+{% endblock %}

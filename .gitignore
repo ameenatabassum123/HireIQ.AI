@@ -1,0 +1,45 @@
+# Secrets and local config (includes APIFY_API_TOKEN — never commit)
+.env
+**/config/user_profile.json
+**/user_profile.json
+**/config/profiles/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Generated output (resumes, cover letters, exports, logs)
+**/output/
+*.log
+*.txt
+# (Wait, let's make sure we only ignore log/text files that are temp or generated.
+# For example, scrape_report_extract.txt and scrape_summary.log.
+# But keep README.md and requirements.txt!
+# Let's specify log files more precisely to be safe, e.g. *.log and specific temp txt files)
+job-agent/*.log
+job-agent/*.txt
+!job-agent/requirements.txt
+!job-agent/requirements-*.txt
+
+# PDFs anywhere in the repo (resumes, generated docs, ...)
+*.pdf
+
+# Databases / caches
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
